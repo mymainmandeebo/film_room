@@ -458,6 +458,23 @@ async def upload_video_chunk(
 
     return {"status": "chunk_received", "chunk_index": chunk_index}
 
+@app.post("/api/projects/{project_id}/upload-cancel")
+def cancel_upload(
+    project_id: str,
+    upload_id: str = Form(...),
+    original_filename: str = Form(...),
+    user: dict = Depends(get_current_user)
+):
+    check_project_access(user, project_id)
+    if user["role"] in ["viewer", "player"]:
+        raise HTTPException(status_code=403, detail="Permission denied")
+    ext = Path(original_filename).suffix or ".mp4"
+    safe_filename = f"{project_id}_{upload_id}{ext}"
+    target_path = UPLOAD_DIR / safe_filename
+    faststart_path = UPLOAD_DIR / f"faststart_{safe_filename}"
+    cleanup_temp_files(target_path, faststart_path)
+    return {"status": "cancelled"}
+
 # --- Video Clipping & Editing Endpoints ---
 class ClipCreatePayload(BaseModel):
     project_id: str
