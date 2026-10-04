@@ -208,12 +208,12 @@
     </div>
   </div>
 
-  <!-- ================= EDIT SAVED CLIP MODAL (100-CHAR ANNOTATION) ================= -->
+  <!-- ================= EDIT SAVED CLIP MODAL ================= -->
   <div id="editClipModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 hidden backdrop-blur-sm">
     <div class="md-dialog bg-md-surface-container-lowest dark:bg-md-dark-surface-container-low border border-md-outline-variant dark:border-md-dark-outline-variant shadow-md-3 w-full max-w-md flex flex-col gap-3">
       <div class="flex justify-between items-center border-b border-md-outline-variant dark:border-md-dark-outline-variant pb-2">
         <h3 class="text-base font-medium text-md-tertiary dark:text-md-dark-tertiary flex items-center gap-1.5">
-          <span class="material-symbols-outlined" style="font-size: 14px;">edit_note</span>
+          <span class="material-symbols-outlined" style="font-size: 18px;">edit_note</span>
           Edit Clip Details
         </h3>
         <button onclick="closeEditClipModal()" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant w-8 h-8 p-0 rounded-full">
@@ -234,7 +234,7 @@
       <div>
         <div class="flex justify-between items-center mb-1">
           <label class="text-xs font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant">Annotation (Max 100 chars)</label>
-          <span id="editModalCharCount" class="text-[12px] font-mono text-slate-500">0/100</span>
+          <span id="editModalCharCount" class="text-[10px] font-mono text-slate-500">0/100</span>
         </div>
         <input 
           type="text" 
@@ -723,7 +723,7 @@
             </button>
           </div>
 
-          <!-- Annotation Field (100 Chars Max) -->
+          <!-- Annotation Field (100 Chars) -->
           <div class="relative flex items-center">
             <input 
               type="text" 
@@ -836,57 +836,56 @@
       list.innerHTML = filtered.map(c => {
         const clipTags = c.categories || [c.category || "General"];
         const clipPlayers = c.players || [c.player || "Unassigned"];
-        
-        // Hide default auto-generated "Event at..." labels; only display actual coaching annotations
-        const rawNote = (c.notes || "").trim();
-        const cleanNotes = rawNote.startsWith("Event at") ? "" : rawNote;
+        const noteDisplay = (c.notes || "").trim();
 
         return `
-          <div class="bg-white dark:bg-[#1E1C24] p-2 px-2.5 rounded-lg border border-slate-200 dark:border-[#333] hover:border-md-primary/50 transition shadow-sm flex flex-col gap-1.5">
-            <!-- Row 1: Badges, Players, Annotation, and Duration -->
-            <div class="flex items-center justify-between gap-1.5 min-w-0">
-              <div class="flex items-center gap-1.5 overflow-hidden flex-wrap flex-1 min-w-0">
+          <div class="bg-white dark:bg-[#211F26] p-2.5 px-3 rounded-xl border border-slate-200 dark:border-[#333] hover:border-md-primary/50 transition shadow-sm flex flex-col gap-1.5">
+            <!-- Line 1: Tags, Players, and Duration -->
+            <div class="flex items-center justify-between gap-2 min-w-0">
+              <div class="flex items-center gap-1.5 overflow-hidden flex-wrap">
                 ${clipTags.map(t => `
-                  <span class="text-[10px] font-bold uppercase tracking-wider text-md-primary dark:text-[#D0BCFF] bg-md-primaryContainer/70 dark:bg-[#4A4458] px-1.5 py-0.2 rounded shrink-0">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-md-primary dark:text-[#D0BCFF] bg-md-primary-container/70 dark:bg-[#4A4458] px-2 py-0.5 rounded-full shrink-0">
                     ${t}
                   </span>
                 `).join('')}
 
                 <div class="flex items-center gap-1 text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
                   ${clipPlayers.map(p => `
-                    <span class="bg-slate-100 dark:bg-[#2B2930] px-1.5 py-0.5 rounded border border-slate-200/60 dark:border-slate-700/60 shrink-0 text-[11px]">${p}</span>
+                    <span class="bg-slate-100 dark:bg-[#2B2930] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/60 shrink-0">${p}</span>
                   `).join('')}
                 </div>
-
-                ${cleanNotes ? `
-                  <span class="text-[11px] text-amber-500/90 dark:text-amber-300/90 italic truncate max-w-[150px]" title="${cleanNotes}">
-                    • ${cleanNotes}
-                  </span>
-                ` : ''}
               </div>
 
-              <span class="text-xs font-mono font-bold text-slate-500 dark:text-slate-400 shrink-0">${c.duration}s</span>
+              <span class="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 shrink-0">${c.duration}s</span>
             </div>
 
-            <!-- Row 2: Action Buttons -->
+            <!-- Line 2: Note / Annotation (if present) -->
+            ${noteDisplay ? `
+              <div class="flex items-center gap-1.5 text-xs text-amber-500/90 dark:text-amber-300/90 italic truncate" title="${noteDisplay}">
+                <span class="text-[13px] material-symbols-outlined shrink-0 not-italic">edit_note</span>
+                <span class="truncate">${noteDisplay}</span>
+              </div>
+            ` : ''}
+
+            <!-- Line 3: Actions -->
             <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/80">
               <div class="flex items-center gap-1">
-                <button type="button" onclick="playClip('${c.url}')" class="bg-md-primary hover:bg-[#5b4594] text-white text-xs px-2.5 py-0.5 rounded font-medium shadow-sm transition active:scale-95 flex items-center gap-1">
+                <button type="button" onclick="playClip('${c.url}')" class="bg-md-primary hover:bg-[#5b4594] text-white text-xs px-3 py-1 rounded-md font-medium shadow-sm transition active:scale-95 flex items-center gap-1">
                   <span class="material-symbols-outlined text-[15px]">play_arrow</span> Watch
                 </button>
-                <button onclick="openEditClipModal('${c.id}')" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition" title="Edit Clip">
+                <button onclick="openEditClipModal('${c.id}')" class="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800 transition" title="Edit Clip">
                   <span class="material-symbols-outlined text-[15px]">edit</span>
                 </button>
-                <button onclick="promptAddClipToReel('${c.id}')" class="text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800 px-2 py-0.5 rounded transition flex items-center gap-0.5" title="Add to Reel">
+                <button onclick="promptAddClipToReel('${c.id}')" class="text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-800 px-2 py-1 rounded-md transition flex items-center gap-1">
                   <span class="material-symbols-outlined text-[15px]">playlist_add</span> Reel
                 </button>
-                <a href="${c.url}" download="${c.filename || 'clip.mp4'}" class="w-6 h-6 rounded flex items-center justify-center text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition" title="Download">
+                <a href="${c.url}" download="${c.filename || 'clip.mp4'}" class="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-white hover:bg-slate-800 transition" title="Download">
                   <span class="material-symbols-outlined text-[15px]">download</span>
                 </a>
               </div>
 
               ${currentUser && currentUser.role !== 'viewer' && currentUser.role !== 'player' ? `
-                <button onclick="deleteClip('${c.id}')" class="text-slate-400 hover:text-rose-500 w-6 h-6 rounded flex items-center justify-center hover:bg-rose-950/40 transition" title="Delete">
+                <button onclick="deleteClip('${c.id}')" class="text-slate-400 hover:text-rose-500 w-7 h-7 rounded-md flex items-center justify-center hover:bg-rose-950/40 transition">
                   <span class="material-symbols-outlined text-[16px]">delete</span>
                 </button>
               ` : ''}
