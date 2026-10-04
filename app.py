@@ -6,6 +6,7 @@ import json
 import zipfile
 import io
 import time
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional, Union
 import bcrypt
@@ -14,7 +15,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Dep
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
 
 SECRET_KEY = os.getenv("JWT_SECRET", "super-secret-tactics-key-change-in-prod")
@@ -113,6 +114,7 @@ def read_db():
                 if "players" not in c:
                     c["players"] = [c["player"]] if c.get("player") else ["Unassigned / Team Play"]
                 c.setdefault("sport", "Basketball")
+                c.setdefault("notes", "")
             return data
     except Exception:
         return {"users": [], "projects": [], "clips": [], "reels": [], "rosters": []}
@@ -475,21 +477,21 @@ def cancel_upload(
     cleanup_temp_files(target_path, faststart_path)
     return {"status": "cancelled"}
 
-# --- Video Clipping & Editing Endpoints ---
+# --- Video Clipping & 100-Char Short Annotations ---
 class ClipCreatePayload(BaseModel):
     project_id: str
     start_time: float
     end_time: float
+    category: Optional[str] = "General"
     categories: Optional[List[str]] = []
-    category: Optional[str] = None
+    player: Optional[str] = "Unassigned"
     players: Optional[List[str]] = []
-    player: Optional[str] = None
-    notes: Optional[str] = ""
+    notes: Optional[str] = Field(default="", max_length=100)
 
 class ClipUpdatePayload(BaseModel):
     categories: List[str]
     players: List[str]
-    notes: Optional[str] = ""
+    notes: Optional[str] = Field(default="", max_length=100)
 
 @app.post("/api/clips")
 def create_clip(payload: ClipCreatePayload, user: dict = Depends(get_current_user)):
@@ -521,7 +523,10 @@ def create_clip(payload: ClipCreatePayload, user: dict = Depends(get_current_use
     clip_id = uuid.uuid4().hex[:8]
     clean_player_slug = "_".join([sanitize_for_filename(p, default="Player") for p in tagged_players[:2]])
     tags_slug = "_".join([sanitize_for_filename(t, default="Tag") for t in tags[:2]])
-    clip_filename = f"clip_{clean_player_slug}_{tags_slug}_{clip_id}.mp4"
+    
+    # Generate current date in MM_DD_YYYY format
+    current_date = datetime.now().strftime("%m_%d_%Y")
+    clip_filename = f"clip_{clean_player_slug}_{tags_slug}_{clip_id}_{current_date}.mp4"
     output_path = CLIPS_DIR / clip_filename
     duration = payload.end_time - payload.start_time
 
@@ -560,18 +565,19 @@ def create_clip(payload: ClipCreatePayload, user: dict = Depends(get_current_use
         if res_fb.returncode != 0:
             raise HTTPException(status_code=500, detail="Clip processing failed")
 
+    # Sanitize and truncate note to 100 chars
+    clean_notes = (payload.notes or "").strip()[:100]
+
     clip_record = {
         "id": clip_id,
         "project_id": payload.project_id,
-        "project_name": project["name"],
-        "sport": project.get("sport", "Basketball"),
         "filename": clip_filename,
         "url": f"/media/clips/{clip_filename}",
-        "categories": tags,
         "category": tags[0],
-        "players": tagged_players,
+        "categories": tags,
         "player": tagged_players[0],
-        "notes": payload.notes or "",
+        "players": tagged_players,
+        "notes": clean_notes,
         "start_time": round(payload.start_time, 2),
         "end_time": round(payload.end_time, 2),
         "duration": round(duration, 2),
@@ -604,7 +610,7 @@ def update_clip(clip_id: str, payload: ClipUpdatePayload, user: dict = Depends(g
     clip["category"] = tags[0]
     clip["players"] = pls
     clip["player"] = pls[0]
-    clip["notes"] = payload.notes or ""
+    clip["notes"] = (payload.notes or "").strip()[:100]
 
     write_db(db)
     return clip
