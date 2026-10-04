@@ -16,6 +16,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.background import BackgroundTask
+from datetime import datetime
 
 SECRET_KEY = os.getenv("JWT_SECRET", "super-secret-tactics-key-change-in-prod")
 ALGORITHM = "HS256"
@@ -522,9 +523,12 @@ def create_clip(payload: ClipCreatePayload, user: dict = Depends(get_current_use
     clip_id = uuid.uuid4().hex[:8]
     clean_player_slug = "_".join([sanitize_for_filename(p, default="Player") for p in tagged_players[:2]])
     tags_slug = "_".join([sanitize_for_filename(t, default="Tag") for t in tags[:2]])
-    clip_filename = f"clip_{clean_player_slug}_{tags_slug}_{clip_id}.mp4"
-    output_path = CLIPS_DIR / clip_filename
-    duration = payload.end_time - payload.start_time
+    
+    # Generate the current date in MM_DD_YYYY format
+    current_date = datetime.now().strftime("%m_%d_%Y")
+    
+    # Append the date to the end of the filename
+    clip_filename = f"clip_{clean_player_slug}_{tags_slug}_{clip_id}_{current_date}.mp4"
 
     cmd_fast = [
         "ffmpeg", "-y",
