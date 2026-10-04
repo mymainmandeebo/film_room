@@ -3495,42 +3495,55 @@
 
       list.innerHTML = filtered.map(c => {
         const clipTags = c.categories || [c.category || "General"];
-        const clipPlayers = c.players || [c.player || "Unassigned / Team Play"];
+        const clipPlayers = c.players || [c.player || "Unassigned"];
 
         return `
-          <div class="bg-md-surface-container-high dark:bg-md-dark-surface-container-high p-3 rounded-md-md border border-md-outline-variant dark:border-md-dark-outline-variant flex flex-col gap-1.5 shadow-sm">
-            <div class="flex justify-between items-start gap-2">
-              <div class="flex flex-wrap gap-1">
-                ${clipTags.map(t => `<span class="md-chip selected bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary border-transparent !py-0.5 !px-2 !text-xs">${t}</span>`).join('')}
+          <div class="bg-white dark:bg-[#211F26] p-2.5 px-3 rounded-xl border border-slate-200 dark:border-[#333] hover:border-m3-primary/50 transition shadow-sm flex flex-col gap-1.5">
+            <!-- Top Line: Badges, Players, Notes & Duration -->
+            <div class="flex items-center justify-between gap-2 min-w-0">
+              <div class="flex items-center gap-1.5 overflow-hidden flex-wrap">
+                <!-- Category Badges -->
+                ${clipTags.map(t => `
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-m3-primary dark:text-[#D0BCFF] bg-m3-primaryContainer/70 dark:bg-[#4A4458] px-2 py-0.5 rounded-full shrink-0">
+                    ${t}
+                  </span>
+                `).join('')}
+
+                <!-- Players -->
+                <div class="flex items-center gap-1 text-xs font-medium text-slate-800 dark:text-slate-200 truncate">
+                  ${clipPlayers.map(p => `
+                    <span class="bg-slate-100 dark:bg-[#2B2930] px-2 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/60 shrink-0">${p}</span>
+                  `).join('')}
+                </div>
+
+                <!-- Notes / Timestamp Inline -->
+                ${c.notes ? `<span class="text-[11px] text-slate-400 dark:text-slate-400 italic truncate max-w-[140px]" title="${c.notes}">• ${c.notes}</span>` : ''}
               </div>
-              <span class="text-xs font-mono font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant shrink-0">${c.duration}s</span>
-            </div>
-            
-            <div class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant font-medium mt-0.5 flex flex-wrap items-center gap-1">
-              <span>Players:</span>
-              ${clipPlayers.map(p => `<span class="text-md-on-surface dark:text-md-dark-on-surface font-medium bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest px-2 py-0.5 rounded-full border border-md-outline-variant dark:border-md-dark-outline-variant">${p}</span>`).join('')}
+
+              <!-- Duration -->
+              <span class="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 shrink-0">${c.duration}s</span>
             </div>
 
-            ${c.notes ? `<p class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant italic line-clamp-1">${c.notes}</p>` : ''}
+            <!-- Bottom Line: Actions -->
+            <div class="flex items-center justify-between pt-1 border-t border-slate-100 dark:border-slate-800/80">
+              <div class="flex items-center gap-1">
+                <button type="button" onclick="playClip('${c.url}')" class="bg-m3-primary hover:bg-[#5b4594] text-white text-xs px-3 py-1 rounded-md font-medium shadow-sm transition active:scale-95 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[15px]">play_arrow</span> Watch
+                </button>
+                <button onclick="openEditClipModal('${c.id}')" class="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Edit Clip">
+                  <span class="material-symbols-outlined text-[15px]">edit</span>
+                </button>
+                <button onclick="promptAddClipToReel('${c.id}')" class="text-xs text-slate-600 dark:text-slate-300 hover:text-m3-primary hover:bg-slate-100 dark:hover:bg-slate-800 px-2 py-1 rounded-md transition flex items-center gap-1" title="Add to Reel">
+                  <span class="material-symbols-outlined text-[15px]">playlist_add</span> Reel
+                </button>
+                <a href="${c.url}" download="${c.filename || 'clip.mp4'}" class="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Download">
+                  <span class="material-symbols-outlined text-[15px]">download</span>
+                </a>
+              </div>
 
-            <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
-              <button type="button" onclick="playClip('${c.url}')" class="md-btn-filled bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary !py-1.5 !px-3 !text-xs cursor-pointer">
-                <span class="material-symbols-outlined" style="font-size: 16px;">play_arrow</span>
-                Watch
-              </button>
-              <button onclick="openEditClipModal('${c.id}')" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !py-1.5 !px-2.5 !text-xs !rounded-full">
-                <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
-              </button>
-              <button onclick="promptAddClipToReel('${c.id}')" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary !py-1.5 !px-2.5 !text-xs !rounded-full" title="Add to Reel">
-                <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
-                Reel
-              </button>
-              <a href="${c.url}" download="${c.filename}" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !py-1.5 !px-2.5 !text-xs !rounded-full">
-                <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
-              </a>
               ${currentUser && currentUser.role !== 'viewer' && currentUser.role !== 'player' ? `
-                <button onclick="deleteClip('${c.id}')" class="md-btn-text text-md-error dark:text-md-dark-error !py-1.5 !px-2.5 !text-xs !rounded-full ml-auto">
-                  <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                <button onclick="deleteClip('${c.id}')" class="text-slate-400 hover:text-rose-500 w-7 h-7 rounded-md flex items-center justify-center hover:bg-rose-50 dark:hover:bg-rose-950/40 transition" title="Delete">
+                  <span class="material-symbols-outlined text-[16px]">delete</span>
                 </button>
               ` : ''}
             </div>
