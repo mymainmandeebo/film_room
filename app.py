@@ -16,8 +16,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.background import BackgroundTask
-from datetime import datetime
-from pydantic import BaseModel, Field
 
 SECRET_KEY = os.getenv("JWT_SECRET", "super-secret-tactics-key-change-in-prod")
 ALGORITHM = "HS256"
