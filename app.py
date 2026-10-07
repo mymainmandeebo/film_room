@@ -491,6 +491,9 @@ class ClipCreatePayload(BaseModel):
 class ClipUpdatePayload(BaseModel):
     categories: List[str]
     players: List[str]
+    start_time: Optional[float] = None
+    end_time: Optional[float] = None
+    timestamp: Optional[Union[float, str]] = None
     annotation: Optional[str] = ""
     notes: Optional[str] = ""
 
@@ -610,6 +613,20 @@ def update_clip(clip_id: str, payload: ClipUpdatePayload, user: dict = Depends(g
     clip["player"] = pls[0]
     clip["annotation"] = (payload.annotation or "").strip()[:100]
     clip["notes"] = payload.notes or ""
+
+    if payload.start_time is not None:
+        clip["start_time"] = round(payload.start_time, 2)
+    elif payload.timestamp is not None:
+        try:
+            clip["start_time"] = round(float(payload.timestamp), 2)
+        except ValueError:
+            pass
+
+    if payload.end_time is not None:
+        clip["end_time"] = round(payload.end_time, 2)
+
+    if clip.get("start_time") is not None and clip.get("end_time") is not None:
+        clip["duration"] = round(max(0.0, clip["end_time"] - clip["start_time"]), 2)
 
     write_db(db)
     return clip

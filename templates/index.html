@@ -365,8 +365,8 @@
       </div>
 
       <div>
-        <label class="text-xs font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant block mb-2">Coaching Notes</label>
-        <textarea id="editClipNotesInput" placeholder="Add specific breakdown notes..." class="w-full bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm p-3 text-sm text-md-on-surface dark:text-md-dark-on-surface resize-none" rows="3"></textarea>
+        <label class="text-xs font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant block mb-1">Timestamp</label>
+        <input type="text" id="editClipTimestampInput" placeholder="00:00.00" class="w-full bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm px-3 py-2 text-sm text-md-on-surface dark:text-md-dark-on-surface font-mono">
       </div>
 
       <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-md-outline-variant dark:border-md-dark-outline-variant">
@@ -1055,9 +1055,16 @@
                 <span class="material-symbols-outlined" style="font-size: 20px;">folder_zip</span>
               </button>
             </div>
-            <select id="playerFilterSelect" class="w-full bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm px-3 py-2 text-sm text-md-on-surface dark:text-md-dark-on-surface font-medium">
-              <option value="ALL">All Players</option>
-            </select>
+            <div class="grid grid-cols-2 gap-2">
+              <select id="playerFilterSelect" class="w-full bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm px-3 py-2 text-sm text-md-on-surface dark:text-md-dark-on-surface font-medium">
+                <option value="ALL">All Players</option>
+              </select>
+              <select id="clipSortSelect" class="w-full bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm px-3 py-2 text-sm text-md-on-surface dark:text-md-dark-on-surface font-medium">
+                <option value="time_asc" selected>Timestamp (0:00 → End)</option>
+                <option value="time_desc">Timestamp (End → 0:00)</option>
+                <option value="created_desc">Newest Created</option>
+              </select>
+            </div>
           </div>
 
           <div id="clipList" class="flex-1 overflow-y-auto flex flex-col gap-2.5 mt-1"></div>
@@ -3139,6 +3146,34 @@
       return `${m}:${sec}.${ms}`;
     }
 
+    function parseTimeToSeconds(val) {
+      if (typeof val === 'number') return val;
+      if (!val || typeof val !== 'string') return 0;
+      const str = val.trim();
+      if (str.includes(':')) {
+        const parts = str.split(':');
+        if (parts.length === 2) {
+          return (parseFloat(parts[0]) || 0) * 60 + (parseFloat(parts[1]) || 0);
+        } else if (parts.length === 3) {
+          return (parseFloat(parts[0]) || 0) * 3600 + (parseFloat(parts[1]) || 0) * 60 + (parseFloat(parts[2]) || 0);
+        }
+      }
+      return parseFloat(str) || 0;
+    }
+
+    function parseTimestampInput(val, defaultDuration = 10) {
+      if (!val || typeof val !== 'string') return { startTime: 0, endTime: defaultDuration };
+      const str = val.trim();
+      let parts = str.includes('→') ? str.split('→') : (str.includes(' - ') ? str.split(' - ') : []);
+      if (parts.length === 2) {
+        const s = parseTimeToSeconds(parts[0]);
+        const e = parseTimeToSeconds(parts[1]);
+        return { startTime: s, endTime: Math.max(s, e) };
+      }
+      const s = parseTimeToSeconds(str);
+      return { startTime: s, endTime: s + defaultDuration };
+    }
+
     // --- Timeline & Scrubber ---
     function updateTimelineUI() {
       if (!video.duration) return;
@@ -3464,7 +3499,7 @@
         categories: mark.categories || [categories[0] || "Play"],
         players: mark.players || ["Unassigned / Team Play"],
         annotation: (mark.annotation || "").trim().slice(0, 100),
-        notes: mark.notes || `Event at ${formatTime(mark.eventTime)}`
+        notes: ""
       };
 
       try {
@@ -3497,18 +3532,33 @@
     // --- Saved Clips & Multi-Tag/Multi-Player Editing ---
     let cachedClips = [];
 
+    function getClipTimestamp(c) {
+      if (!c) return 0;
+      if (c.start_time !== undefined && c.start_time !== null) return Number(c.start_time);
+      if (c.startTime !== undefined && c.startTime !== null) return Number(c.startTime);
+      if (c.timestamp !== undefined && c.timestamp !== null) {
+        const t = Number(c.timestamp);
+        if (!isNaN(t)) return t;
+        return new Date(c.timestamp).getTime() || 0;
+      }
+      if (c.created_at) return new Date(c.created_at).getTime() || 0;
+      return 0;
+    }
+
     async function loadClips() {
       if (!currentProjectId) return;
       const res = await fetch(`/api/projects/${currentProjectId}/clips`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       cachedClips = await res.json();
+      cachedClips.sort((a, b) => getClipTimestamp(a) - getClipTimestamp(b));
       applyClipFilters();
     }
 
     function applyClipFilters() {
       const catFilter = document.getElementById('clipFilter').value;
       const playerFilter = document.getElementById('playerFilterSelect').value;
+      const sortOrder = document.getElementById('clipSortSelect')?.value || 'time_asc';
 
       let filtered = cachedClips;
 
@@ -3518,6 +3568,18 @@
       if (playerFilter !== 'ALL') {
         filtered = filtered.filter(c => (c.players || [c.player]).includes(playerFilter));
       }
+
+      filtered = [...filtered].sort((a, b) => {
+        if (sortOrder === 'time_desc') {
+          return getClipTimestamp(b) - getClipTimestamp(a);
+        } else if (sortOrder === 'created_desc') {
+          const aCreated = a.created_at ? new Date(a.created_at).getTime() : (a.id || 0);
+          const bCreated = b.created_at ? new Date(b.created_at).getTime() : (b.id || 0);
+          return bCreated > aCreated ? 1 : -1;
+        } else {
+          return getClipTimestamp(a) - getClipTimestamp(b);
+        }
+      });
 
       document.getElementById('clipCount').innerText = cachedClips.length;
 
@@ -3533,6 +3595,7 @@
       list.innerHTML = filtered.map(c => {
         const clipTags = c.categories || [c.category || "General"];
         const clipPlayers = c.players || [c.player || "Unassigned / Team Play"];
+        const clipStartTime = (c.start_time !== undefined && c.start_time !== null) ? c.start_time : c.startTime;
 
         return `
           <div class="bg-md-surface-container-high dark:bg-md-dark-surface-container-high p-3 rounded-md-md border border-md-outline-variant dark:border-md-dark-outline-variant flex flex-col gap-1.5 shadow-sm">
@@ -3540,7 +3603,9 @@
               <div class="flex flex-wrap gap-1">
                 ${clipTags.map(t => `<span class="md-chip selected bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary border-transparent !py-0.5 !px-2 !text-xs">${t}</span>`).join('')}
               </div>
-              <span class="text-xs font-mono font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant shrink-0">${c.duration}s</span>
+              <span class="text-xs font-mono font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant shrink-0">
+                ${clipStartTime !== undefined && clipStartTime !== null ? `<span class="text-md-primary dark:text-md-dark-primary font-bold">${formatTime(clipStartTime)}</span> • ` : ''}${c.duration}s
+              </span>
             </div>
             
             <div class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant font-medium mt-0.5 flex flex-wrap items-center gap-1">
@@ -3554,8 +3619,6 @@
                 <span class="truncate">${c.annotation}</span>
               </div>
             ` : ''}
-
-            ${c.notes ? `<p class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant italic line-clamp-1">${c.notes}</p>` : ''}
 
             <div class="flex items-center gap-1.5 mt-1.5 flex-wrap">
               <button type="button" onclick="playClip('${c.url}')" class="md-btn-filled bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary !py-1.5 !px-3 !text-xs cursor-pointer">
@@ -3591,11 +3654,15 @@
 
       editModalSelectedCategories = [...(clip.categories || [clip.category || "General"])];
       editModalSelectedPlayers = [...(clip.players || [clip.player || "Unassigned / Team Play"])];
-      document.getElementById('editClipNotesInput').value = clip.notes || '';
 
       const annot = clip.annotation || '';
       document.getElementById('editClipAnnotationInput').value = annot;
       document.getElementById('editClipAnnotationCount').innerText = `${annot.length}/100`;
+
+      const clipTime = (clip.start_time !== undefined && clip.start_time !== null) ? clip.start_time : (clip.startTime || 0);
+      const timestampInput = document.getElementById('editClipTimestampInput');
+      if (timestampInput) timestampInput.value = formatTime(clipTime);
+
 
       renderEditModalToggles();
       document.getElementById('editClipModal').classList.remove('hidden');
@@ -3659,11 +3726,19 @@
     document.getElementById('saveEditClipBtn').onclick = async () => {
       if (!editingClipId) return;
 
+      const clip = cachedClips.find(c => c.id === editingClipId);
+      const currentDuration = clip ? (clip.duration || (clip.end_time - clip.start_time) || 10) : 10;
+      const rawTimestamp = document.getElementById('editClipTimestampInput')?.value || "";
+      const { startTime, endTime } = parseTimestampInput(rawTimestamp, currentDuration);
+
       const payload = {
         categories: editModalSelectedCategories,
         players: editModalSelectedPlayers,
         annotation: (document.getElementById('editClipAnnotationInput').value || "").trim().slice(0, 100),
-        notes: document.getElementById('editClipNotesInput').value.trim()
+        start_time: startTime,
+        end_time: endTime,
+        timestamp: startTime,
+        notes: ""
       };
 
       const res = await fetch(`/api/clips/${editingClipId}`, {
@@ -3683,6 +3758,7 @@
 
     document.getElementById('clipFilter').onchange = applyClipFilters;
     document.getElementById('playerFilterSelect').onchange = applyClipFilters;
+    document.getElementById('clipSortSelect').onchange = applyClipFilters;
 
     window.deleteClip = async (id) => {
       if (!confirm('Delete clip?')) return;
@@ -3775,6 +3851,7 @@
 
       if (!res.ok) return;
       const clips = await res.json();
+      clips.sort((a, b) => getClipTimestamp(a) - getClipTimestamp(b));
       renderPlayerProfileData(clips);
     }
 
@@ -3812,12 +3889,16 @@
         return;
       }
 
-      grid.innerHTML = clips.map(c => `
+      grid.innerHTML = clips.map(c => {
+        const clipStartTime = (c.start_time !== undefined && c.start_time !== null) ? c.start_time : c.startTime;
+        return `
         <div class="bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-lg overflow-hidden shadow-sm flex flex-col justify-between md-elevation">
           <div class="p-4 flex flex-col gap-2">
             <div class="flex justify-between items-center">
               <span class="text-xs font-mono font-medium text-md-tertiary dark:text-md-dark-tertiary">${c.project_name || "Game Film"}</span>
-              <span class="text-xs font-mono font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant">${c.duration}s</span>
+              <span class="text-xs font-mono font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant">
+                ${clipStartTime !== undefined && clipStartTime !== null ? `<span class="text-md-primary dark:text-md-dark-primary font-semibold">${formatTime(clipStartTime)}</span> • ` : ''}${c.duration}s
+              </span>
             </div>
             <div class="flex flex-wrap gap-1 mt-1">
               ${(c.categories || [c.category]).map(cat => `
@@ -3830,7 +3911,6 @@
                 <span class="truncate">${c.annotation}</span>
               </div>
             ` : ''}
-            ${c.notes ? `<p class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant mt-1 italic line-clamp-2">"${c.notes}"</p>` : ''}
           </div>
           <div class="p-3 bg-md-surface-container dark:bg-md-dark-surface-container border-t border-md-outline-variant dark:border-md-dark-outline-variant flex items-center justify-between gap-2">
             <button type="button" onclick="playClip('${c.url}')" class="md-btn-filled bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary !py-1.5 !px-3 !text-xs cursor-pointer">
@@ -3847,7 +3927,8 @@
             </div>
           </div>
         </div>
-      `).join('');
+      `;
+      }).join('');
     }
 
     // Keyboard Shortcuts & Multi-Tag Hotkeys
