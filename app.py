@@ -113,6 +113,7 @@ def read_db():
                 if "players" not in c:
                     c["players"] = [c["player"]] if c.get("player") else ["Unassigned / Team Play"]
                 c.setdefault("sport", "Basketball")
+                c.setdefault("annotation", "")
             return data
     except Exception:
         return {"users": [], "projects": [], "clips": [], "reels": [], "rosters": []}
@@ -484,11 +485,13 @@ class ClipCreatePayload(BaseModel):
     category: Optional[str] = None
     players: Optional[List[str]] = []
     player: Optional[str] = None
+    annotation: Optional[str] = ""
     notes: Optional[str] = ""
 
 class ClipUpdatePayload(BaseModel):
     categories: List[str]
     players: List[str]
+    annotation: Optional[str] = ""
     notes: Optional[str] = ""
 
 @app.post("/api/clips")
@@ -571,6 +574,7 @@ def create_clip(payload: ClipCreatePayload, user: dict = Depends(get_current_use
         "category": tags[0],
         "players": tagged_players,
         "player": tagged_players[0],
+        "annotation": (payload.annotation or "").strip()[:100],
         "notes": payload.notes or "",
         "start_time": round(payload.start_time, 2),
         "end_time": round(payload.end_time, 2),
@@ -604,6 +608,7 @@ def update_clip(clip_id: str, payload: ClipUpdatePayload, user: dict = Depends(g
     clip["category"] = tags[0]
     clip["players"] = pls
     clip["player"] = pls[0]
+    clip["annotation"] = (payload.annotation or "").strip()[:100]
     clip["notes"] = payload.notes or ""
 
     write_db(db)
@@ -871,15 +876,16 @@ def export_project_clips_zip(project_id: str, category: Optional[str] = None, us
     zip_buffer = io.BytesIO()
     with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
         zip_file.writestr("metadata.json", json.dumps(clips, indent=2))
-        csv_header = "ID,Sport,Categories,Players,Filename,Start_Sec,End_Sec,Duration_Sec,Created_By\n"
+        csv_header = "ID,Sport,Categories,Players,Filename,Start_Sec,End_Sec,Duration_Sec,Annotation,Created_By\n"
         
         csv_rows = []
         for c in clips:
             cats = ";".join(c.get("categories", [c.get("category", "")]))
             pls = ";".join(c.get("players", [c.get("player", "")]))
             sp = c.get("sport", "Basketball")
+            annot = (c.get("annotation", "") or "").replace('"', '""')
             csv_rows.append(
-                f'{c["id"]},{sp},"{cats}","{pls}",{c["filename"]},{c["start_time"]},{c["end_time"]},{c["duration"]},{c["created_by"]}'
+                f'{c["id"]},{sp},"{cats}","{pls}",{c["filename"]},{c["start_time"]},{c["end_time"]},{c["duration"]},"{annot}",{c["created_by"]}'
             )
         zip_file.writestr("summary.csv", csv_header + "\n".join(csv_rows))
 
