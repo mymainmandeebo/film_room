@@ -842,26 +842,55 @@
   <section id="playerProfileView" style="display: none;" class="flex-1 p-4 sm:p-8 max-w-7xl mx-auto w-full">
     <div class="flex flex-col gap-6">
       
-      <div class="bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest border border-md-outline-variant dark:border-md-dark-outline-variant p-6 rounded-md-xl shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5">
+      <!-- Profile Header Banner -->
+      <div class="bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest border border-md-outline-variant dark:border-md-dark-outline-variant p-6 rounded-md-xl shadow-sm flex flex-wrap items-center justify-between gap-5">
         <div class="flex items-center gap-4">
-          <div class="w-16 h-16 rounded-full bg-md-tertiary-container dark:bg-md-dark-tertiary-container flex items-center justify-center">
-            <span class="material-symbols-outlined filled text-md-on-tertiary-container dark:text-md-dark-on-tertiary-container" style="font-size: 32px;">person</span>
+          <div class="relative group w-20 h-20 rounded-full bg-md-tertiary-container dark:bg-md-dark-tertiary-container flex items-center justify-center overflow-hidden border-2 border-md-outline-variant dark:border-md-dark-outline-variant shadow-inner shrink-0">
+            <img id="profilePlayerAvatarImg" src="" alt="Player Picture" class="w-full h-full object-cover hidden">
+            <span id="profilePlayerAvatarPlaceholder" class="material-symbols-outlined filled text-md-on-tertiary-container dark:text-md-dark-on-tertiary-container" style="font-size: 36px;">person</span>
+            <label id="profileAvatarOverlayBtn" class="absolute inset-0 bg-black/60 text-white flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition cursor-pointer hidden" title="Upload player picture">
+              <span class="material-symbols-outlined" style="font-size: 20px;">photo_camera</span>
+              <span class="text-[10px] font-medium">Change</span>
+              <input type="file" id="profilePhotoFileInput" accept="image/*" class="hidden">
+            </label>
           </div>
           <div>
             <h2 id="profilePlayerNameHeading" class="text-2xl font-medium text-md-on-surface dark:text-md-dark-on-surface">Player Film Vault</h2>
-            <p id="profilePlayerSubheading" class="text-sm text-md-on-surface-variant dark:text-md-dark-on-surface-variant">Select a roster and player to analyze individual tape.</p>
+            <p id="profilePlayerSubheading" class="text-sm text-md-on-surface-variant dark:text-md-dark-on-surface-variant">Select a player from the UI below to populate their clips and breakdown.</p>
+          </div>
+        </div>
+        <div id="profilePhotoActions" class="flex items-center gap-2 hidden">
+          <label class="md-btn-filled bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary !py-2 !px-3.5 !text-xs cursor-pointer flex items-center gap-1.5 shadow-sm">
+            <span class="material-symbols-outlined" style="font-size: 16px;">upload</span>
+            <span id="uploadPhotoBtnText">Upload Picture</span>
+            <input type="file" id="profilePhotoDirectFileInput" accept="image/*" class="hidden">
+          </label>
+          <button id="btnRemovePlayerPhoto" onclick="removeCurrentPlayerPhoto()" class="md-btn-outlined border-md-error dark:border-md-dark-error text-md-error dark:text-md-dark-error !py-2 !px-3 !text-xs hidden" title="Remove picture">
+            <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+            Remove
+          </button>
+        </div>
+      </div>
+
+      <!-- Dedicated Player Selection Navigation UI Element -->
+      <div id="playerSelectionCard" class="bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest border border-md-outline-variant dark:border-md-dark-outline-variant p-5 rounded-md-xl shadow-sm flex flex-col gap-4">
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-md-outline-variant dark:border-md-dark-outline-variant">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined text-md-primary dark:text-md-dark-primary" style="font-size: 22px;">group</span>
+            <span class="text-sm font-medium text-md-on-surface dark:text-md-dark-on-surface">Select Player</span>
+            <span id="playerSelectCountBadge" class="text-xs font-mono bg-md-secondary-container dark:bg-md-dark-secondary-container text-md-on-secondary-container dark:text-md-dark-on-secondary-container px-2 py-0.5 rounded-full font-medium">0 players</span>
+          </div>
+
+          <div id="playerViewSelectControls" class="flex flex-wrap items-center gap-3">
+            <label class="text-xs font-medium uppercase text-md-on-surface-variant dark:text-md-dark-on-surface-variant">Roster:</label>
+            <select id="profileRosterSelect" onchange="onProfileRosterChanged()" class="bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm px-3 py-1.5 text-xs font-medium text-md-on-surface dark:text-md-dark-on-surface"></select>
+            <select id="profilePlayerSelect" onchange="onPlayerSelectDropdownChanged()" class="hidden"></select>
           </div>
         </div>
 
-        <div id="playerViewSelectControls" class="flex flex-wrap items-center gap-3">
-          <div>
-            <label class="block text-xs font-medium uppercase text-md-on-surface-variant dark:text-md-dark-on-surface-variant mb-1">Roster</label>
-            <select id="profileRosterSelect" onchange="onProfileRosterChanged()" class="bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm px-4 py-3 text-sm font-medium text-md-on-surface dark:text-md-dark-on-surface"></select>
-          </div>
-          <div>
-            <label class="block text-xs font-medium uppercase text-md-on-surface-variant dark:text-md-dark-on-surface-variant mb-1">Player</label>
-            <select id="profilePlayerSelect" onchange="fetchPlayerClips()" class="bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm px-4 py-3 text-sm font-medium text-md-on-surface dark:text-md-dark-on-surface"></select>
-          </div>
+        <!-- Interactive Player Chips Selector -->
+        <div id="profilePlayerChipsContainer" class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-1">
+          <!-- Populated dynamically with player buttons -->
         </div>
       </div>
 
@@ -1130,6 +1159,8 @@
     let editingProjectId = null;
     let editingRosterIndex = null;
     let currentClipToReel = null;
+    let selectedProfilePlayer = null;
+    let playerPhotos = {};
 
     let editingClipId = null;
     let editModalSelectedCategories = [];
@@ -2331,8 +2362,14 @@
                 </button>
               </div>
             </div>
-            <div class="mt-2 pt-2 border-t border-md-outline-variant dark:border-md-dark-outline-variant text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant line-clamp-1">
-              ${validPlayers.join(', ') || 'No players added yet'}
+            <div class="mt-2 pt-2 border-t border-md-outline-variant dark:border-md-dark-outline-variant text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant flex flex-wrap gap-1">
+              ${validPlayers.map(p => {
+                const photo = playerPhotos[p];
+                return `<button type="button" onclick="selectPlayerAndNavigate('${p.replace(/'/g, "\\'")}', '${r.name.replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1 hover:text-md-primary dark:hover:text-md-dark-primary hover:underline cursor-pointer">
+                  ${photo ? `<img src="${photo}" class="w-4 h-4 rounded-full object-cover inline" alt="">` : ''}
+                  <span>${p}</span>
+                </button>`;
+              }).join(', ') || 'No players added yet'}
             </div>
           </div>
         `;
@@ -2585,6 +2622,7 @@
         renderCategories();
         updateSettingsUI();
 
+        try { await loadPlayerPhotos(); } catch (e) { console.error("loadPlayerPhotos failed:", e); }
         try { await loadRosters(); } catch (e) { console.error("loadRosters failed:", e); }
         try { await loadProjects(); } catch (e) { console.error("loadProjects failed:", e); }
         try { await loadReels(); } catch (e) { console.error("loadReels failed:", e); }
@@ -3610,7 +3648,13 @@
             
             <div class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant font-medium mt-0.5 flex flex-wrap items-center gap-1">
               <span>Players:</span>
-              ${clipPlayers.map(p => `<span class="text-md-on-surface dark:text-md-dark-on-surface font-medium bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest px-2 py-0.5 rounded-full border border-md-outline-variant dark:border-md-dark-outline-variant">${p}</span>`).join('')}
+              ${clipPlayers.map(p => {
+                const photo = playerPhotos[p];
+                return `<span class="inline-flex items-center gap-1 text-md-on-surface dark:text-md-dark-on-surface font-medium bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest px-2 py-0.5 rounded-full border border-md-outline-variant dark:border-md-dark-outline-variant">
+                  ${photo ? `<img src="${photo}" class="w-3.5 h-3.5 rounded-full object-cover inline" alt="">` : ''}
+                  <span>${p}</span>
+                </span>`;
+              }).join('')}
             </div>
 
             ${c.annotation ? `
@@ -3795,15 +3839,17 @@
     // --- Dedicated Player Profile View Logic ---
     function initPlayerProfileView() {
       const isPlayerUser = currentUser && currentUser.role === 'player';
-      const controls = document.getElementById('playerViewSelectControls');
+      const playerSelectionCard = document.getElementById('playerSelectionCard');
 
       if (isPlayerUser) {
-        controls.classList.add('hidden');
+        if (playerSelectionCard) playerSelectionCard.classList.add('hidden');
         document.getElementById('profilePlayerNameHeading').innerText = currentUser.player_name || "My Film Vault";
         document.getElementById('profilePlayerSubheading').innerText = "All your clips across all games.";
+        selectedProfilePlayer = currentUser.player_name;
+        updatePlayerAvatarUI(currentUser.player_name);
         fetchPlayerClips(currentUser.player_name);
       } else {
-        controls.classList.remove('hidden');
+        if (playerSelectionCard) playerSelectionCard.classList.remove('hidden');
         const rosterSelect = document.getElementById('profileRosterSelect');
         rosterSelect.innerHTML = `<option value="ALL">All Rosters</option>` + 
           rosters.map(r => `<option value="${r.name}">${r.name}</option>`).join('');
@@ -3811,12 +3857,150 @@
       }
     }
 
+    async function loadPlayerPhotos() {
+      if (!token) return;
+      try {
+        const res = await fetch('/api/players/photos', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          playerPhotos = await res.json();
+        }
+      } catch (err) {
+        console.error("Failed to load player photos:", err);
+      }
+    }
+
+    function updatePlayerAvatarUI(playerName) {
+      const imgEl = document.getElementById('profilePlayerAvatarImg');
+      const placeholderEl = document.getElementById('profilePlayerAvatarPlaceholder');
+      const overlayBtn = document.getElementById('profileAvatarOverlayBtn');
+      const actionsContainer = document.getElementById('profilePhotoActions');
+      const removeBtn = document.getElementById('btnRemovePlayerPhoto');
+      const uploadText = document.getElementById('uploadPhotoBtnText');
+
+      if (!imgEl || !placeholderEl) return;
+
+      if (!playerName) {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        placeholderEl.classList.remove('hidden');
+        if (overlayBtn) overlayBtn.classList.add('hidden');
+        if (actionsContainer) actionsContainer.classList.add('hidden');
+        return;
+      }
+
+      const canEdit = currentUser && (
+        currentUser.role === 'admin' ||
+        currentUser.role === 'coach' ||
+        (currentUser.role === 'player' && currentUser.player_name === playerName)
+      );
+
+      const photoUrl = playerPhotos[playerName];
+      if (photoUrl) {
+        imgEl.src = photoUrl;
+        imgEl.classList.remove('hidden');
+        placeholderEl.classList.add('hidden');
+        if (removeBtn) removeBtn.classList.remove('hidden');
+        if (uploadText) uploadText.innerText = 'Change Picture';
+      } else {
+        imgEl.src = '';
+        imgEl.classList.add('hidden');
+        placeholderEl.classList.remove('hidden');
+        if (removeBtn) removeBtn.classList.add('hidden');
+        if (uploadText) uploadText.innerText = 'Upload Picture';
+      }
+
+      if (canEdit) {
+        if (overlayBtn) overlayBtn.classList.remove('hidden');
+        if (actionsContainer) actionsContainer.classList.remove('hidden');
+      } else {
+        if (overlayBtn) overlayBtn.classList.add('hidden');
+        if (actionsContainer) actionsContainer.classList.add('hidden');
+      }
+    }
+
+    async function handlePlayerPhotoUpload(file) {
+      const targetPlayer = selectedProfilePlayer || (currentUser && currentUser.role === 'player' ? currentUser.player_name : null);
+      if (!targetPlayer) return alert("Select a player first.");
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('player_name', targetPlayer);
+      formData.append('photo', file);
+
+      showExportToast("Uploading Photo", `Saving picture for ${targetPlayer}...`, true);
+
+      try {
+        const res = await fetch('/api/players/photo', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || "Upload failed");
+        }
+
+        const data = await res.json();
+        playerPhotos[targetPlayer] = data.url;
+        updatePlayerAvatarUI(targetPlayer);
+        onProfileRosterChanged();
+        renderRostersUI();
+        showExportToast("Photo Uploaded", `Picture for ${targetPlayer} updated successfully.`, false);
+        setTimeout(hideExportToast, 2500);
+      } catch (err) {
+        showExportToast("Upload Failed", err.message, false);
+        setTimeout(hideExportToast, 3500);
+      }
+    }
+
+    window.removeCurrentPlayerPhoto = async () => {
+      const targetPlayer = selectedProfilePlayer || (currentUser && currentUser.role === 'player' ? currentUser.player_name : null);
+      if (!targetPlayer) return;
+      if (!confirm(`Remove picture for ${targetPlayer}?`)) return;
+
+      try {
+        const res = await fetch(`/api/players/photo?player_name=${encodeURIComponent(targetPlayer)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          delete playerPhotos[targetPlayer];
+          updatePlayerAvatarUI(targetPlayer);
+          onProfileRosterChanged();
+          renderRostersUI();
+          showExportToast("Photo Removed", `Picture for ${targetPlayer} removed.`, false);
+          setTimeout(hideExportToast, 2500);
+        }
+      } catch (err) {
+        alert("Failed to remove photo");
+      }
+    };
+
+    document.getElementById('profilePhotoFileInput')?.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handlePlayerPhotoUpload(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+    document.getElementById('profilePhotoDirectFileInput')?.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        handlePlayerPhotoUpload(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+
     function onProfileRosterChanged() {
-      const rosterName = document.getElementById('profileRosterSelect').value;
+      const rosterName = document.getElementById('profileRosterSelect')?.value || "ALL";
       const playerSelect = document.getElementById('profilePlayerSelect');
+      const chipsContainer = document.getElementById('profilePlayerChipsContainer');
+      const countBadge = document.getElementById('playerSelectCountBadge');
       let playerList = [];
 
-      if (rosterName === "ALL") {
+      if (!rosterName || rosterName === "ALL") {
         const set = new Set();
         rosters.forEach(r => (r.players || []).forEach(p => {
           if (p && !p.toLowerCase().includes('unassigned')) set.add(p);
@@ -3827,23 +4011,105 @@
         playerList = (r ? r.players : []).filter(p => p && !p.toLowerCase().includes('unassigned'));
       }
 
-      playerSelect.innerHTML = playerList.map(p => `<option value="${p}">${p}</option>`).join('');
-      fetchPlayerClips();
+      if (countBadge) countBadge.innerText = `${playerList.length} ${playerList.length === 1 ? 'player' : 'players'}`;
+
+      if (playerSelect) {
+        playerSelect.innerHTML = `<option value="">-- Choose a Player --</option>` +
+          playerList.map(p => `<option value="${p}">${p}</option>`).join('');
+      }
+
+      if (chipsContainer) {
+        if (playerList.length === 0) {
+          chipsContainer.innerHTML = `<span class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant italic py-2">No players found in this roster.</span>`;
+        } else {
+          chipsContainer.innerHTML = playerList.map(p => {
+            const isSelected = selectedProfilePlayer === p;
+            const photoUrl = playerPhotos[p];
+            return `
+              <button type="button" onclick="selectPlayerForProfile('${p.replace(/'/g, "\\'")}')" class="player-nav-chip md-chip ${isSelected ? 'selected bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary border-transparent shadow-sm' : 'bg-md-surface-container-high dark:bg-md-dark-surface-container-high text-md-on-surface dark:text-md-dark-on-surface border-md-outline-variant dark:border-md-dark-outline-variant hover:border-md-primary dark:hover:border-md-dark-primary'} transition-all">
+                ${photoUrl
+                  ? `<img src="${photoUrl}" class="w-4 h-4 rounded-full object-cover shrink-0" alt="">`
+                  : `<span class="material-symbols-outlined" style="font-size: 16px;">${isSelected ? 'check_circle' : 'person'}</span>`
+                }
+                <span>${p}</span>
+              </button>
+            `;
+          }).join('');
+        }
+      }
+
+      if (selectedProfilePlayer && playerList.includes(selectedProfilePlayer)) {
+        if (playerSelect) playerSelect.value = selectedProfilePlayer;
+        updatePlayerAvatarUI(selectedProfilePlayer);
+        fetchPlayerClips(selectedProfilePlayer);
+      } else {
+        selectedProfilePlayer = null;
+        updatePlayerAvatarUI(null);
+        if (playerSelect) playerSelect.value = "";
+        fetchPlayerClips(null);
+      }
     }
 
+    window.selectPlayerForProfile = (playerName) => {
+      selectedProfilePlayer = playerName;
+      const playerSelect = document.getElementById('profilePlayerSelect');
+      if (playerSelect) playerSelect.value = playerName || "";
+
+      const chips = document.querySelectorAll('.player-nav-chip');
+      chips.forEach(chip => {
+        const text = chip.querySelector('span:last-child')?.innerText?.trim();
+        const icon = chip.querySelector('.material-symbols-outlined');
+        if (text === playerName) {
+          chip.className = "player-nav-chip md-chip selected bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary border-transparent shadow-sm transition-all";
+          if (icon) icon.innerText = 'check_circle';
+        } else {
+          chip.className = "player-nav-chip md-chip bg-md-surface-container-high dark:bg-md-dark-surface-container-high text-md-on-surface dark:text-md-dark-on-surface border-md-outline-variant dark:border-md-dark-outline-variant hover:border-md-primary dark:hover:border-md-dark-primary transition-all";
+          if (icon) icon.innerText = 'person';
+        }
+      });
+
+      updatePlayerAvatarUI(playerName);
+      fetchPlayerClips(playerName);
+    };
+
+    window.onPlayerSelectDropdownChanged = () => {
+      const selectedVal = document.getElementById('profilePlayerSelect').value;
+      selectPlayerForProfile(selectedVal);
+    };
+
+    window.selectPlayerAndNavigate = (playerName, rosterName) => {
+      switchView('player');
+      const rosterSelect = document.getElementById('profileRosterSelect');
+      if (rosterSelect && rosterName) {
+        rosterSelect.value = rosterName;
+        onProfileRosterChanged();
+      }
+      selectPlayerForProfile(playerName);
+    };
+
     async function fetchPlayerClips(overridePlayerName = null) {
-      const playerName = overridePlayerName || document.getElementById('profilePlayerSelect')?.value;
+      const playerName = overridePlayerName !== null ? overridePlayerName : (selectedProfilePlayer || document.getElementById('profilePlayerSelect')?.value);
       const rosterName = document.getElementById('profileRosterSelect')?.value || "ALL";
 
       if (!playerName) {
-        document.getElementById('playerClipsGrid').innerHTML = `<p class="text-sm text-md-on-surface-variant dark:text-md-dark-on-surface-variant py-8 text-center col-span-3">No player selected.</p>`;
+        document.getElementById('profilePlayerNameHeading').innerText = "Player Film Vault";
+        document.getElementById('profilePlayerSubheading').innerText = "Select a player from the UI above to populate their game clips and breakdown.";
+        document.getElementById('statTotalClips').innerText = "0";
+        document.getElementById('statTotalFilmTime').innerText = "0s";
+        document.getElementById('playerClipCounter').innerText = "0 Clips";
+        document.getElementById('statTagPills').innerHTML = `<span class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant italic">Select a player to view tag breakdown</span>`;
+        document.getElementById('playerClipsGrid').innerHTML = `
+          <div class="col-span-full py-16 text-center text-md-on-surface-variant dark:text-md-dark-on-surface-variant text-base font-medium flex flex-col items-center gap-3">
+            <span class="material-symbols-outlined" style="font-size: 56px; opacity: 0.4;">person_search</span>
+            <p class="text-lg font-medium text-md-on-surface dark:text-md-dark-on-surface">No Player Selected</p>
+            <p class="text-sm max-w-md">Choose a player from the selection UI above to analyze their personal game tape, duration, and tagged possessions.</p>
+          </div>
+        `;
         return;
       }
 
-      if (!overridePlayerName) {
-        document.getElementById('profilePlayerNameHeading').innerText = `${playerName}'s Film Vault`;
-        document.getElementById('profilePlayerSubheading').innerText = `Breakdown of tagged possessions and tape.`;
-      }
+      document.getElementById('profilePlayerNameHeading').innerText = `${playerName}'s Film Vault`;
+      document.getElementById('profilePlayerSubheading').innerText = `Breakdown of tagged possessions and tape.`;
 
       const res = await fetch(`/api/players/clips?player_name=${encodeURIComponent(playerName)}&roster_name=${encodeURIComponent(rosterName)}`, {
         headers: { 'Authorization': `Bearer ${token}` }

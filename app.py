@@ -27,9 +27,10 @@ DATA_DIR = BASE_DIR / "data"
 UPLOAD_DIR = DATA_DIR / "uploads"
 CLIPS_DIR = DATA_DIR / "clips"
 REELS_DIR = DATA_DIR / "reels"
+PLAYERS_DIR = DATA_DIR / "players"
 DB_FILE = DATA_DIR / "store.json"
 
-for folder in [UPLOAD_DIR, CLIPS_DIR, REELS_DIR]:
+for folder in [UPLOAD_DIR, CLIPS_DIR, REELS_DIR, PLAYERS_DIR]:
     folder.mkdir(parents=True, exist_ok=True)
 
 security = HTTPBearer()
@@ -37,6 +38,7 @@ security = HTTPBearer()
 app.mount("/media/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.mount("/media/clips", StaticFiles(directory=str(CLIPS_DIR)), name="clips")
 app.mount("/media/reels", StaticFiles(directory=str(REELS_DIR)), name="reels")
+app.mount("/media/players", StaticFiles(directory=str(PLAYERS_DIR)), name="players")
 
 def sanitize_for_filename(name: Optional[str], default: str = "Unassigned") -> str:
     if not name or not name.strip():
@@ -92,7 +94,8 @@ def init_db():
                 }
             ],
             "clips": [],
-            "reels": []
+            "reels": [],
+            "player_photos": {}
         }
         with open(DB_FILE, "w") as f:
             json.dump(default_data, f, indent=2)
@@ -105,6 +108,7 @@ def read_db():
             data = json.load(f)
             data.setdefault("reels", [])
             data.setdefault("rosters", [])
+            data.setdefault("player_photos", {})
             for p in data.get("projects", []):
                 p.setdefault("sport", "Basketball")
             for c in data.get("clips", []):
@@ -116,7 +120,7 @@ def read_db():
                 c.setdefault("annotation", "")
             return data
     except Exception:
-        return {"users": [], "projects": [], "clips": [], "reels": [], "rosters": []}
+        return {"users": [], "projects": [], "clips": [], "reels": [], "rosters": [], "player_photos": {}}
 
 def write_db(data):
     with open(DB_FILE, "w") as f:
@@ -784,6 +788,89 @@ def delete_reel(reel_id: str, user: dict = Depends(get_current_user)):
     db["reels"] = [r for r in db["reels"] if r["id"] != reel_id]
     write_db(db)
     return {"status": "deleted"}
+
+# --- Player Photos Management ---
+@app.get("/api/players/photos")
+def get_player_photos(user: dict = Depends(get_current_user)):
+    db = read_db()
+    photos = db.get("player_photos", {})
+    return {
+        name: f"/media/players/{filename}"
+        for name, filename in photos.items()
+    }
+
+@app.post("/api/players/photo")
+async def upload_player_photo(
+    player_name: str = Form(...),
+    photo: UploadFile = File(...),
+    user: dict = Depends(get_current_user)
+):
+    clean_player = player_name.strip()
+    if not clean_player:
+        raise HTTPException(status_code=400, detail="Player name required")
+
+    if user["role"] == "viewer":
+        raise HTTPException(status_code=403, detail="Viewers cannot upload player photos")
+    if user["role"] == "player" and user.get("player_name") != clean_player:
+        raise HTTPException(status_code=403, detail="Cannot upload photos for other players")
+
+    ext = Path(photo.filename or "").suffix.lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"]:
+        raise HTTPException(status_code=400, detail="Unsupported image format. Use JPG, PNG, WEBP, or GIF")
+
+    content = await photo.read()
+    if len(content) > 10 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image file too large (max 10MB)")
+
+    db = read_db()
+    photos = db.setdefault("player_photos", {})
+
+    old_filename = photos.get(clean_player)
+    if old_filename:
+        old_file = PLAYERS_DIR / old_filename
+        if old_file.exists():
+            try:
+                old_file.unlink()
+            except Exception:
+                pass
+
+    safe_slug = sanitize_for_filename(clean_player, default="player")
+    unique_filename = f"player_{safe_slug}_{uuid.uuid4().hex[:6]}{ext}"
+    target_path = PLAYERS_DIR / unique_filename
+
+    with open(target_path, "wb") as f:
+        f.write(content)
+
+    photos[clean_player] = unique_filename
+    write_db(db)
+
+    return {
+        "status": "uploaded",
+        "player_name": clean_player,
+        "url": f"/media/players/{unique_filename}"
+    }
+
+@app.delete("/api/players/photo")
+def delete_player_photo(player_name: str, user: dict = Depends(get_current_user)):
+    clean_player = player_name.strip()
+    if user["role"] == "viewer":
+        raise HTTPException(status_code=403, detail="Permission denied")
+    if user["role"] == "player" and user.get("player_name") != clean_player:
+        raise HTTPException(status_code=403, detail="Cannot delete photos for other players")
+
+    db = read_db()
+    photos = db.setdefault("player_photos", {})
+    old_filename = photos.pop(clean_player, None)
+    if old_filename:
+        old_file = PLAYERS_DIR / old_filename
+        if old_file.exists():
+            try:
+                old_file.unlink()
+            except Exception:
+                pass
+        write_db(db)
+
+    return {"status": "deleted", "player_name": clean_player}
 
 def cleanup_temp_files(*paths: Path):
     for p in paths:
