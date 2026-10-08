@@ -20,7 +20,10 @@ from starlette.background import BackgroundTask
 SECRET_KEY = os.getenv("JWT_SECRET", "super-secret-tactics-key-change-in-prod")
 ALGORITHM = "HS256"
 
-app = FastAPI(title="Sports Film Room Analyzer")
+APP_ENV = os.getenv("APP_ENV", "PROD").upper()
+APP_ENV_LABEL = "Dev" if APP_ENV == "DEV" else "Prod"
+
+app = FastAPI(title=f"Sports Film Room Analyzer ({APP_ENV_LABEL})")
 
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "data"
@@ -156,6 +159,14 @@ def check_project_access(user: dict, project_id: str):
 @app.get("/", response_class=FileResponse)
 async def serve_app(request: Request):
     return FileResponse(BASE_DIR / "templates" / "index.html")
+
+@app.get("/api/config")
+def get_app_config():
+    return {
+        "env": APP_ENV,
+        "env_label": APP_ENV_LABEL,
+        "app_title": f"Sports Film Room ({APP_ENV_LABEL})"
+    }
 
 # --- Auth Endpoints ---
 class LoginPayload(BaseModel):

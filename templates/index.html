@@ -812,7 +812,7 @@
           <span class="material-symbols-outlined filled text-md-on-primary-container dark:text-md-dark-on-primary-container" style="font-size: 24px;">sports</span>
         </div>
         <div class="hidden sm:block">
-          <h1 class="text-base font-medium leading-tight text-md-on-surface dark:text-md-dark-on-surface">Sports Film Room</h1>
+          <h1 id="appTitleHeading" class="text-base font-medium leading-tight text-md-on-surface dark:text-md-dark-on-surface">Sports Film Room</h1>
           <span id="roleBadge" class="text-xs font-mono uppercase bg-md-secondary-container dark:bg-md-dark-secondary-container text-md-on-secondary-container dark:text-md-dark-on-secondary-container px-2 py-0.5 rounded-full font-medium">User</span>
         </div>
       </div>
@@ -2782,6 +2782,24 @@
     window.addEventListener('resize', syncCanvas);
 
     // --- Auth Management ---
+    let appConfig = { env: "PROD", env_label: "Prod", app_title: "Sports Film Room (Prod)" };
+
+    async function loadAppConfig() {
+      try {
+        const res = await fetch('/api/config');
+        if (res.ok) {
+          appConfig = await res.json();
+          document.title = appConfig.app_title;
+          const heading = document.getElementById('appTitleHeading');
+          if (heading) heading.innerText = appConfig.app_title;
+        }
+      } catch (err) {
+        console.error("Failed to load app config:", err);
+      }
+    }
+
+    loadAppConfig();
+
     async function checkAuth() {
       if (!token) {
         document.getElementById('loginModal').classList.remove('hidden');
