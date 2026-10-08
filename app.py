@@ -189,6 +189,12 @@ class UserCreatePayload(BaseModel):
     project_ids: List[str]
     player_name: Optional[str] = None
 
+class UserUpdatePayload(BaseModel):
+    password: Optional[str] = None
+    role: Optional[str] = None
+    project_ids: Optional[List[str]] = None
+    player_name: Optional[str] = None
+
 @app.get("/api/admin/users")
 def list_users(user: dict = Depends(get_current_user)):
     if user["role"] != "admin":
@@ -229,6 +235,36 @@ def create_user(payload: UserCreatePayload, user: dict = Depends(get_current_use
     db["users"].append(new_user)
     write_db(db)
     return {"status": "created", "id": new_user["id"]}
+
+@app.put("/api/admin/users/{user_id}")
+def update_user(user_id: str, payload: UserUpdatePayload, user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+    db = read_db()
+    target = next((u for u in db["users"] if u["id"] == user_id), None)
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if payload.password:
+        if len(payload.password) < 4:
+            raise HTTPException(status_code=400, detail="Password (min 4 chars) required")
+        hashed_pw = bcrypt.hashpw(payload.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        target["password_hash"] = hashed_pw
+
+    if payload.role:
+        if payload.role not in ["admin", "coach", "viewer", "player"]:
+            raise HTTPException(status_code=400, detail="Invalid role specified")
+        target["role"] = payload.role
+
+    if payload.player_name is not None:
+        target["player_name"] = payload.player_name if target["role"] == "player" else None
+
+    if payload.project_ids is not None:
+        target["project_ids"] = ["*"] if target["role"] in ["admin", "player"] else payload.project_ids
+
+    write_db(db)
+    return {"status": "updated", "id": user_id}
 
 @app.delete("/api/admin/users/{user_id}")
 def delete_user(user_id: str, user: dict = Depends(get_current_user)):
@@ -714,6 +750,10 @@ class ReelCreatePayload(BaseModel):
     title: str
     description: Optional[str] = ""
 
+class ReelUpdatePayload(BaseModel):
+    title: str
+    description: Optional[str] = ""
+
 class ReelUpdateClipsPayload(BaseModel):
     clip_ids: List[str]
 
@@ -738,6 +778,20 @@ def create_reel(payload: ReelCreatePayload, user: dict = Depends(get_current_use
     db["reels"].append(new_reel)
     write_db(db)
     return new_reel
+
+@app.put("/api/reels/{reel_id}")
+def update_reel(reel_id: str, payload: ReelUpdatePayload, user: dict = Depends(get_current_user)):
+    if user["role"] in ["viewer", "player"]:
+        raise HTTPException(status_code=403, detail="Permission denied to modify reels")
+    db = read_db()
+    reel = next((r for r in db["reels"] if r["id"] == reel_id), None)
+    if not reel:
+        raise HTTPException(status_code=404, detail="Reel not found")
+
+    reel["title"] = payload.title.strip()
+    reel["description"] = payload.description.strip()
+    write_db(db)
+    return reel
 
 @app.get("/api/reels/{reel_id}")
 def get_reel(reel_id: str, user: dict = Depends(get_current_user)):

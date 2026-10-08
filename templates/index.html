@@ -295,6 +295,78 @@
     .safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
     .drag-over { border: 2px dashed #6750A4 !important; background-color: rgba(103, 80, 164, 0.1) !important; }
 
+    /* --- Compact Density Mode ---
+       Tailwind's default spacing/typography/radius scale is rem-based, so scaling
+       the root font-size proportionally shrinks padding, gaps, border-radius and
+       text sizes across the whole app without needing per-element overrides.
+       On top of that, directly remap the Tailwind spacing utility classes used
+       throughout the markup/templates so padding and gaps shrink much further
+       than the font-size scale alone would give us. [class~="..."] matches an
+       exact whitespace-separated class token, so it won't false-positive on
+       unrelated classes (e.g. "opacity-80" vs "p-8"). !important is required
+       since the Tailwind CDN injects its utility <style> at runtime, which can
+       land after this block in source order. */
+    html.compact { font-size: 85%; }
+
+    html.compact .md-dialog { padding: 18px; }
+    html.compact .md-btn-filled,
+    html.compact .md-btn-outlined,
+    html.compact .md-btn-text,
+    html.compact .md-btn-tonal { gap: 6px; }
+    html.compact .md-chip { padding: 4px 10px; }
+    html.compact kbd { padding: 1px 4px; }
+    html.compact #videoContainer { max-height: 38vh; }
+
+    /* Padding */
+    html.compact [class~="p-1"] { padding: 0.15rem !important; }
+    html.compact [class~="p-1.5"] { padding: 0.2rem !important; }
+    html.compact [class~="p-2"] { padding: 0.3rem !important; }
+    html.compact [class~="p-2.5"] { padding: 0.4rem !important; }
+    html.compact [class~="p-3"] { padding: 0.5rem !important; }
+    html.compact [class~="p-3.5"] { padding: 0.55rem !important; }
+    html.compact [class~="p-4"] { padding: 0.6rem !important; }
+    html.compact [class~="p-5"] { padding: 0.75rem !important; }
+    html.compact [class~="p-6"] { padding: 0.9rem !important; }
+    html.compact [class~="p-8"],
+    html.compact [class~="sm:p-8"] { padding: 1rem !important; }
+
+    /* Horizontal / vertical padding */
+    html.compact [class~="px-2"] { padding-left: 0.3rem !important; padding-right: 0.3rem !important; }
+    html.compact [class~="px-3"] { padding-left: 0.5rem !important; padding-right: 0.5rem !important; }
+    html.compact [class~="px-4"] { padding-left: 0.6rem !important; padding-right: 0.6rem !important; }
+    html.compact [class~="px-5"] { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+    html.compact [class~="px-6"] { padding-left: 0.9rem !important; padding-right: 0.9rem !important; }
+    html.compact [class~="px-8"],
+    html.compact [class~="sm:px-8"] { padding-left: 1rem !important; padding-right: 1rem !important; }
+    html.compact [class~="py-1"] { padding-top: 0.15rem !important; padding-bottom: 0.15rem !important; }
+    html.compact [class~="py-1.5"] { padding-top: 0.2rem !important; padding-bottom: 0.2rem !important; }
+    html.compact [class~="py-2"] { padding-top: 0.3rem !important; padding-bottom: 0.3rem !important; }
+    html.compact [class~="py-2.5"] { padding-top: 0.35rem !important; padding-bottom: 0.35rem !important; }
+    html.compact [class~="py-3"] { padding-top: 0.45rem !important; padding-bottom: 0.45rem !important; }
+    html.compact [class~="pt-2"] { padding-top: 0.3rem !important; }
+    html.compact [class~="pt-3"] { padding-top: 0.45rem !important; }
+    html.compact [class~="pb-2"] { padding-bottom: 0.3rem !important; }
+    html.compact [class~="pb-3"] { padding-bottom: 0.45rem !important; }
+
+    /* Gaps */
+    html.compact [class~="gap-1"] { gap: 0.15rem !important; }
+    html.compact [class~="gap-1.5"] { gap: 0.2rem !important; }
+    html.compact [class~="gap-2"] { gap: 0.3rem !important; }
+    html.compact [class~="gap-2.5"] { gap: 0.35rem !important; }
+    html.compact [class~="gap-3"] { gap: 0.45rem !important; }
+    html.compact [class~="gap-3.5"] { gap: 0.5rem !important; }
+    html.compact [class~="gap-4"] { gap: 0.6rem !important; }
+    html.compact [class~="gap-5"] { gap: 0.75rem !important; }
+    html.compact [class~="gap-6"] { gap: 0.9rem !important; }
+
+    /* Margins that create visual breathing room */
+    html.compact [class~="mt-1"] { margin-top: 0.15rem !important; }
+    html.compact [class~="mt-2"] { margin-top: 0.3rem !important; }
+    html.compact [class~="mt-3"] { margin-top: 0.45rem !important; }
+    html.compact [class~="mt-3.5"] { margin-top: 0.5rem !important; }
+    html.compact [class~="mt-4"] { margin-top: 0.6rem !important; }
+    html.compact [class~="mb-2"] { margin-bottom: 0.3rem !important; }
+
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #79747E; border-radius: 4px; }
@@ -472,11 +544,11 @@
   <div id="reelModal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4 hidden backdrop-blur-sm">
     <div class="md-dialog bg-md-surface-container-lowest dark:bg-md-dark-surface-container-low border border-md-outline-variant dark:border-md-dark-outline-variant shadow-md-3 w-full max-w-md flex flex-col gap-4">
       <div class="flex justify-between items-center border-b border-md-outline-variant dark:border-md-dark-outline-variant pb-3">
-        <h3 class="text-lg font-medium text-md-tertiary dark:text-md-dark-tertiary flex items-center gap-2">
+        <h3 id="reelModalTitle" class="text-lg font-medium text-md-tertiary dark:text-md-dark-tertiary flex items-center gap-2">
           <span class="material-symbols-outlined" style="font-size: 20px;">video_library</span>
           Create Custom Reel
         </h3>
-        <button onclick="document.getElementById('reelModal').classList.add('hidden')" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant w-10 h-10 p-0 rounded-full">
+        <button onclick="closeReelModal()" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant w-10 h-10 p-0 rounded-full">
           <span class="material-symbols-outlined">close</span>
         </button>
       </div>
@@ -489,8 +561,8 @@
         <textarea id="newReelDescInput" placeholder="Focus points for film session..." class="w-full bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-sm p-4 text-sm text-md-on-surface dark:text-md-dark-on-surface resize-none" rows="4"></textarea>
       </div>
       <button id="submitCreateReelBtn" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary">
-        <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
-        Create Playlist Reel
+        <span id="submitCreateReelIcon" class="material-symbols-outlined" style="font-size: 18px;">add</span>
+        <span id="submitCreateReelText">Create Playlist Reel</span>
       </button>
     </div>
   </div>
@@ -512,7 +584,7 @@
       </div>
 
       <div class="bg-md-surface-container dark:bg-md-dark-surface-container p-4 rounded-md-md flex flex-col gap-3">
-        <h4 class="text-sm font-medium text-md-tertiary dark:text-md-dark-tertiary uppercase tracking-wider flex items-center gap-2">
+        <h4 id="userFormTitle" class="text-sm font-medium text-md-tertiary dark:text-md-dark-tertiary uppercase tracking-wider flex items-center gap-2">
           <span class="material-symbols-outlined" style="font-size: 18px;">person_add</span>
           Create Account
         </h4>
@@ -547,10 +619,12 @@
           <div id="projectCheckboxes" class="flex flex-col gap-1.5 max-h-28 overflow-y-auto p-2 bg-md-surface-container-high dark:bg-md-dark-surface-container-high rounded-md-sm border border-md-outline-variant dark:border-md-dark-outline-variant text-xs"></div>
         </div>
 
-        <button id="createUserSubmitBtn" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary mt-1">
-          <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
-          Create Account
-        </button>
+        <div class="flex items-center gap-2 mt-1">
+          <button id="createUserSubmitBtn" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary">
+            <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+            Create Account
+          </button>
+        </div>
       </div>
 
       <div>
@@ -764,6 +838,11 @@
         <span id="themeToggleText" class="hidden sm:inline text-sm">Dark</span>
       </button>
 
+      <button id="compactToggleBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !p-2 !rounded-full" title="Toggle Compact / Comfortable Density">
+        <span id="compactToggleIcon" class="material-symbols-outlined" style="font-size: 22px;">density_medium</span>
+        <span id="compactToggleText" class="hidden sm:inline text-sm">Comfortable</span>
+      </button>
+
       <button id="btnOpenUserModal" class="hidden md-btn-text text-md-tertiary dark:text-md-dark-tertiary !py-2 !px-3 !rounded-full !text-sm">
         <span class="material-symbols-outlined" style="font-size: 18px;">group</span>
         <span class="hidden sm:inline">Users</span>
@@ -809,7 +888,7 @@
             </h2>
             <p class="text-sm text-md-on-surface-variant dark:text-md-dark-on-surface-variant">Curate multi-game review reels.</p>
           </div>
-          <button onclick="document.getElementById('reelModal').classList.remove('hidden')" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary !py-2 !px-4 !text-sm">
+          <button onclick="openReelModal(null)" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary !py-2 !px-4 !text-sm">
             <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
             New Reel
           </button>
@@ -1156,6 +1235,7 @@
     let isScrubbing = false;
 
     let editingProjectId = null;
+    let editingReelId = null;
     let editingRosterIndex = null;
     let currentClipToReel = null;
     let selectedProfilePlayer = null;
@@ -1207,6 +1287,34 @@
     themeToggleBtn.onclick = () => {
       const isCurrentlyDark = document.documentElement.classList.contains('dark');
       applyTheme(!isCurrentlyDark);
+    };
+
+    // --- Compact Density Engine ---
+    const compactToggleBtn = document.getElementById('compactToggleBtn');
+    const compactToggleIcon = document.getElementById('compactToggleIcon');
+    const compactToggleText = document.getElementById('compactToggleText');
+
+    function applyCompact(isCompact) {
+      if (isCompact) {
+        document.documentElement.classList.add('compact');
+        compactToggleIcon.innerText = 'density_small';
+        compactToggleText.innerText = 'Compact';
+        localStorage.setItem('compactMode', 'true');
+      } else {
+        document.documentElement.classList.remove('compact');
+        compactToggleIcon.innerText = 'density_medium';
+        compactToggleText.innerText = 'Comfortable';
+        localStorage.setItem('compactMode', 'false');
+      }
+      requestAnimationFrame(() => syncCanvas());
+    }
+
+    const savedCompact = localStorage.getItem('compactMode') === 'true';
+    applyCompact(savedCompact);
+
+    compactToggleBtn.onclick = () => {
+      const isCurrentlyCompact = document.documentElement.classList.contains('compact');
+      applyCompact(!isCurrentlyCompact);
     };
 
     // Sport-Specific Categories Map
@@ -1574,6 +1682,36 @@
       document.getElementById('userModal').classList.remove('hidden');
     };
 
+    let editingUserId = null;
+
+    window.editUserAccount = async (userId) => {
+      const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
+      const users = await res.json();
+      const u = users.find(x => x.id === userId);
+      if (!u) return;
+
+      editingUserId = userId;
+      document.getElementById('newUsername').value = u.username;
+      document.getElementById('newUsername').disabled = true;
+      document.getElementById('newPassword').value = '';
+      document.getElementById('newPassword').placeholder = 'Leave blank to keep current';
+      document.getElementById('newUserRole').value = u.role;
+      togglePlayerRoleFields();
+
+      if (u.role === 'player') {
+        document.getElementById('assignPlayerSelect').value = u.player_name || '';
+      } else {
+        document.querySelectorAll('.project-assign-cb').forEach(cb => {
+          cb.checked = u.project_ids && (u.project_ids.includes('*') || u.project_ids.includes(cb.value));
+        });
+      }
+
+      const btn = document.getElementById('createUserSubmitBtn');
+      btn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">save</span> Update Account`;
+      const title = document.getElementById('userFormTitle');
+      if(title) title.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">manage_accounts</span> Edit Account`;
+    };
+
     function togglePlayerRoleFields() {
       const role = document.getElementById('newUserRole').value;
       const playerBox = document.getElementById('playerAssignmentBox');
@@ -1611,6 +1749,21 @@
       }).join('');
     }
 
+    window.cancelEditUser = () => {
+      editingUserId = null;
+      document.getElementById('newUsername').value = '';
+      document.getElementById('newUsername').disabled = false;
+      document.getElementById('newPassword').value = '';
+      document.getElementById('newPassword').placeholder = 'Set password';
+      document.getElementById('newUserRole').value = 'coach';
+      togglePlayerRoleFields();
+      document.querySelectorAll('.project-assign-cb').forEach(cb => cb.checked = false);
+      const btn = document.getElementById('createUserSubmitBtn');
+      btn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">add</span> Create Account`;
+      const title = document.getElementById('userFormTitle');
+      if(title) title.innerHTML = `<span class="material-symbols-outlined" style="font-size: 18px;">person_add</span> Create Account`;
+    };
+
     document.getElementById('createUserSubmitBtn').onclick = async () => {
       const u = document.getElementById('newUsername').value.trim();
       const p = document.getElementById('newPassword').value;
@@ -1618,28 +1771,34 @@
       const checkedProjectIds = Array.from(document.querySelectorAll('.project-assign-cb:checked')).map(cb => cb.value);
       const assignedPlayer = role === 'player' ? document.getElementById('assignPlayerSelect').value : null;
 
-      if (!u || !p) return alert("Username & Password required.");
+      if (!u) return alert("Username required.");
+      if (!editingUserId && !p) return alert("Password required for new user.");
       if (role === 'player' && !assignedPlayer) return alert("Must select a player to link to this account.");
 
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({
-          username: u,
-          password: p,
+      const payload = {
           role: role,
           player_name: assignedPlayer,
           project_ids: (role === 'admin' || role === 'player') ? ["*"] : checkedProjectIds
-        })
+      };
+      if (p) payload.password = p;
+
+      const url = editingUserId ? `/api/admin/users/${editingUserId}` : '/api/admin/users';
+      const method = editingUserId ? 'PUT' : 'POST';
+
+      if (!editingUserId) payload.username = u;
+
+      const res = await fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
-        document.getElementById('newUsername').value = '';
-        document.getElementById('newPassword').value = '';
+        window.cancelEditUser();
         loadUsersList();
       } else {
         const err = await res.json();
-        alert(err.detail || "Failed to create user");
+        alert(err.detail || "Failed to save user");
       }
     };
 
@@ -1665,10 +1824,16 @@
               ${u.player_name ? `<span class="text-xs text-md-tertiary dark:text-md-dark-tertiary font-medium truncate">(${u.player_name})</span>` : ''}
             </div>
             ${!isSelf ? `
-              <button onclick="deleteUserAccount('${u.id}')" class="md-btn-text text-md-error dark:text-md-dark-error hover:bg-md-error-container/20 dark:hover:bg-md-dark-error-container/20 !py-1 !px-2 !rounded-full !text-xs">
-                <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
-                Delete
-              </button>
+              <div class="flex items-center gap-1">
+                <button onclick="editUserAccount('${u.id}')" class="md-btn-text text-md-primary dark:text-md-dark-primary hover:bg-md-primary-container/20 dark:hover:bg-md-dark-primary-container/20 !py-1 !px-2 !rounded-full !text-xs">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">edit</span>
+                  Edit
+                </button>
+                <button onclick="deleteUserAccount('${u.id}')" class="md-btn-text text-md-error dark:text-md-dark-error hover:bg-md-error-container/20 dark:hover:bg-md-dark-error-container/20 !py-1 !px-2 !rounded-full !text-xs">
+                  <span class="material-symbols-outlined" style="font-size: 16px;">delete</span>
+                  Delete
+                </button>
+              </div>
             ` : '<span class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant italic">Active</span>'}
           </div>
         `;
@@ -1792,9 +1957,14 @@
                   ${(r.clip_ids || []).length} Plays in Reel
                 </span>
               </div>
-              <button onclick="deleteReel('${r.id}')" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant hover:text-md-error dark:hover:text-md-dark-error !p-1.5 !rounded-full">
-                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
-              </button>
+              <div class="flex items-center gap-1">
+                <button onclick="openReelModal('${r.id}')" class="md-btn-text text-md-primary dark:text-md-dark-primary !p-1.5 !rounded-full" title="Edit Reel Details">
+                  <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
+                </button>
+                <button onclick="deleteReel('${r.id}')" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant hover:text-md-error dark:hover:text-md-dark-error !p-1.5 !rounded-full" title="Delete Reel">
+                  <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                </button>
+              </div>
             </div>
             <p class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant mt-1 line-clamp-2">${r.description || 'Continuous film review reel'}</p>
           </div>
@@ -1899,22 +2069,57 @@
       }
     };
 
+    window.openReelModal = (reelId = null) => {
+      editingReelId = reelId;
+      const modal = document.getElementById('reelModal');
+      const titleEl = document.getElementById('reelModalTitle');
+      const titleInput = document.getElementById('newReelTitleInput');
+      const descInput = document.getElementById('newReelDescInput');
+      const iconEl = document.getElementById('submitCreateReelIcon');
+      const textEl = document.getElementById('submitCreateReelText');
+
+      if (reelId) {
+        const r = reels.find(x => x.id === reelId);
+        titleEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px;">edit_note</span> Edit Playlist Reel';
+        titleInput.value = r ? (r.title || '') : '';
+        descInput.value = r ? (r.description || '') : '';
+        if (iconEl) iconEl.innerText = 'save';
+        if (textEl) textEl.innerText = 'Update Reel';
+      } else {
+        titleEl.innerHTML = '<span class="material-symbols-outlined" style="font-size: 20px;">video_library</span> Create Custom Reel';
+        titleInput.value = '';
+        descInput.value = '';
+        if (iconEl) iconEl.innerText = 'add';
+        if (textEl) textEl.innerText = 'Create Playlist Reel';
+      }
+      modal.classList.remove('hidden');
+    };
+
+    window.closeReelModal = () => {
+      editingReelId = null;
+      document.getElementById('reelModal').classList.add('hidden');
+    };
+
     document.getElementById('submitCreateReelBtn').onclick = async () => {
       const title = document.getElementById('newReelTitleInput').value.trim();
       const description = document.getElementById('newReelDescInput').value.trim();
       if (!title) return alert("Reel title required.");
 
-      const res = await fetch('/api/reels', {
-        method: 'POST',
+      const url = editingReelId ? `/api/reels/${editingReelId}` : '/api/reels';
+      const method = editingReelId ? 'PUT' : 'POST';
+
+      const res = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({ title, description })
       });
 
       if (res.ok) {
-        document.getElementById('newReelTitleInput').value = '';
-        document.getElementById('newReelDescInput').value = '';
-        document.getElementById('reelModal').classList.add('hidden');
+        closeReelModal();
         await loadReels();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        alert(err.detail || 'Failed to save reel.');
       }
     };
 
