@@ -790,6 +790,37 @@
         </div>
       </div>
 
+      <!-- Backup & Restore -->
+      <div id="backupRestoreSection" class="pb-4 border-b border-md-outline-variant dark:border-md-dark-outline-variant hidden">
+        <h4 class="text-sm font-medium text-md-on-surface-variant dark:text-md-dark-on-surface-variant uppercase tracking-wider flex items-center gap-1.5 mb-2">
+          <span class="material-symbols-outlined" style="font-size: 16px;">cloud_sync</span>
+          Backup & Restore
+        </h4>
+        <p class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant mb-3">
+          Download a full ZIP archive containing all users, games, clips, reels, rosters, settings, and media files. Restoring replaces the current data — make a backup first.
+        </p>
+        <div class="flex flex-wrap gap-2.5">
+          <button id="downloadBackupBtn" class="md-btn-filled bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary !py-2.5 !px-4 !text-sm">
+            <span class="material-symbols-outlined" style="font-size: 18px;">download</span>
+            Download Full Backup (.zip)
+          </button>
+          <label id="restoreBackupLabel" class="md-btn-outlined border-md-tertiary dark:border-md-dark-tertiary text-md-tertiary dark:text-md-dark-tertiary !py-2.5 !px-4 !text-sm cursor-pointer flex items-center gap-2">
+            <span class="material-symbols-outlined" style="font-size: 18px;">upload</span>
+            Restore from Backup (.zip)
+            <input type="file" id="restoreBackupInput" accept=".zip,application/zip" class="hidden">
+          </label>
+        </div>
+        <div id="backupStatusBox" class="hidden mt-3 p-3 rounded-md-sm bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant flex flex-col gap-1.5">
+          <div class="flex items-center justify-between text-xs font-medium">
+            <span id="backupStatusText" class="text-md-on-surface dark:text-md-dark-on-surface">Ready</span>
+            <span id="backupStatusPercent" class="font-mono font-bold text-md-primary dark:text-md-dark-primary hidden">0%</span>
+          </div>
+          <div id="backupProgressWrap" class="w-full h-1.5 bg-md-surface-container-highest dark:bg-md-dark-surface-container-highest rounded-full overflow-hidden hidden">
+            <div id="backupProgressBar" class="h-full bg-md-primary dark:bg-md-dark-primary rounded-full transition-all duration-150" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Action Buttons -->
       <div class="flex items-center gap-2.5 pt-2 border-t border-md-outline-variant dark:border-md-dark-outline-variant flex-wrap">
         <button id="resetCategoriesBtn" class="md-btn-outlined border-md-error dark:border-md-dark-error text-md-error dark:text-md-dark-error !py-2.5">
@@ -1307,6 +1338,28 @@
         localStorage.setItem('compactMode', 'false');
       }
       requestAnimationFrame(() => syncCanvas());
+    }
+
+    // Indeterminate progress bar animation for phases where we can't
+    // compute a real percentage (e.g. server is zipping files before streaming).
+    let indeterminateTimer = null;
+    function startIndeterminateBar(barEl) {
+      stopIndeterminateBar();
+      if (!barEl) return;
+      barEl.style.transition = 'none';
+      let pos = 0;
+      indeterminateTimer = setInterval(() => {
+        pos += 3;
+        if (pos > 100) pos = 0;
+        barEl.style.width = '40%';
+        barEl.style.transform = `translateX(${(pos - 40) * 2.5}%)`;
+      }, 40);
+    }
+    function stopIndeterminateBar() {
+      if (indeterminateTimer) {
+        clearInterval(indeterminateTimer);
+        indeterminateTimer = null;
+      }
     }
 
     const savedCompact = localStorage.getItem('compactMode') === 'true';
@@ -2730,6 +2783,15 @@
     document.getElementById('openSettingsBtn').onclick = () => {
       updateSettingsUI();
       loadSportIntoEditor(currentSport);
+      // Backup & Restore is admin-only
+      const backupSection = document.getElementById('backupRestoreSection');
+      if (backupSection) {
+        if (currentUser && currentUser.role === 'admin') {
+          backupSection.classList.remove('hidden');
+        } else {
+          backupSection.classList.add('hidden');
+        }
+      }
       document.getElementById('settingsModal').classList.remove('hidden');
     };
     document.getElementById('closeSettingsBtn').onclick = () => document.getElementById('settingsModal').classList.add('hidden');
@@ -2773,6 +2835,199 @@
       persistSettingsEditor();
       renderSettingsHotkeyMatrix();
     };
+
+    // --- Backup & Restore (Admin) ---
+    function showBackupStatus(text, percent, spinning, showBar) {
+      const box = document.getElementById('backupStatusBox');
+      const textEl = document.getElementById('backupStatusText');
+      const pctEl = document.getElementById('backupStatusPercent');
+      const wrap = document.getElementById('backupProgressWrap');
+      const bar = document.getElementById('backupProgressBar');
+      if (!box) return;
+
+      box.classList.remove('hidden');
+      textEl.innerText = text;
+
+      if (showBar) {
+        wrap.classList.remove('hidden');
+        bar.style.width = `${percent || 0}%`;
+      } else {
+        wrap.classList.add('hidden');
+      }
+
+      if (percent !== null && percent !== undefined && showBar) {
+        pctEl.classList.remove('hidden');
+        pctEl.innerText = `${percent}%`;
+      } else {
+        pctEl.classList.add('hidden');
+      }
+    }
+
+    function hideBackupStatus(delayMs = 2500) {
+      setTimeout(() => {
+        const box = document.getElementById('backupStatusBox');
+        if (box) box.classList.add('hidden');
+      }, delayMs);
+    }
+
+    document.getElementById('downloadBackupBtn').onclick = async () => {
+      const btn = document.getElementById('downloadBackupBtn');
+      btn.disabled = true;
+      btn.classList.add('opacity-60', 'cursor-wait');
+      const original = btn.innerHTML;
+      btn.innerHTML = `<span class="material-symbols-outlined animate-spin" style="font-size: 18px;">progress_activity</span> Preparing Backup...`;
+
+      showBackupStatus("Collecting users, clips, and media into ZIP...", null, true, false);
+
+      try {
+        const res = await fetch('/api/admin/backup', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ detail: 'Backup failed' }));
+          throw new Error(err.detail || `Server error (${res.status})`);
+        }
+
+        showBackupStatus("Downloading ZIP archive...", null, true, false);
+
+        // Stream the body so we can show download progress.
+        // Prefer the explicit X-Backup-Total-Bytes header (set by the server),
+        // falling back to Content-Length.
+        const headerTotal = res.headers.get('X-Backup-Total-Bytes') || res.headers.get('Content-Length');
+        const total = headerTotal ? parseInt(headerTotal, 10) : 0;
+
+        if (!res.body) {
+          throw new Error("Streaming not supported by this browser.");
+        }
+
+        const reader = res.body.getReader();
+        const chunks = [];
+        let received = 0;
+        const startTime = Date.now();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          chunks.push(value);
+          received += value.length;
+
+          const mbReceived = received / (1024 * 1024);
+          const elapsedSec = Math.max(0.001, (Date.now() - startTime) / 1000);
+          const speedMBs = mbReceived / elapsedSec;
+
+          if (total > 0) {
+            const pct = Math.min(100, Math.round((received / total) * 100));
+            showBackupStatus(
+              `Downloading backup... ${mbReceived.toFixed(1)} MB / ${(total / (1024 * 1024)).toFixed(1)} MB • ${speedMBs.toFixed(1)} MB/s`,
+              pct, true, true
+            );
+          } else {
+            showBackupStatus(
+              `Downloading backup... ${mbReceived.toFixed(1)} MB • ${speedMBs.toFixed(1)} MB/s`,
+              null, true, false
+            );
+          }
+        }
+
+        const blob = new Blob(chunks, { type: 'application/zip' });
+        const disposition = res.headers.get('Content-Disposition') || '';
+        const match = disposition.match(/filename="?([^"]+)"?/);
+        const filename = match ? match[1] : `film_room_backup_${Date.now()}.zip`;
+
+        if (total > 0 && received < total) {
+          console.warn(`Backup download may be truncated: received ${received} of ${total} bytes.`);
+        }
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+
+        showBackupStatus(`Backup complete: ${filename} (${(blob.size / (1024 * 1024)).toFixed(1)} MB)`, 100, false, true);
+        hideBackupStatus(4000);
+      } catch (err) {
+        showBackupStatus(`Backup failed: ${err.message}`, null, false, false);
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('opacity-60', 'cursor-wait');
+        btn.innerHTML = original;
+      }
+    };
+
+    document.getElementById('restoreBackupInput').addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+
+      if (!confirm(
+        `Restore from "${file.name}"?\n\n` +
+        `This will REPLACE all current users, games, clips, reels, rosters, and media files with the contents of this backup.\n\n` +
+        `A backup of the current data is strongly recommended before proceeding.\n\n` +
+        `Continue?`
+      )) return;
+
+      const label = document.getElementById('restoreBackupLabel');
+      label.classList.add('opacity-60', 'pointer-events-none');
+
+      showBackupStatus("Uploading backup archive...", 0, true, true);
+
+      const formData = new FormData();
+      formData.append('backup', file);
+      formData.append('overwrite', 'true');
+
+      try {
+        // Use XHR so we get upload progress events
+        const result = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', '/api/admin/restore');
+          xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+
+          xhr.upload.onprogress = (evt) => {
+            if (evt.lengthComputable) {
+              const pct = Math.round((evt.loaded / evt.total) * 90); // reserve last 10% for server processing
+              showBackupStatus(
+                `Uploading backup... (${(evt.loaded / (1024 * 1024)).toFixed(1)} MB / ${(evt.total / (1024 * 1024)).toFixed(1)} MB)`,
+                pct, true, true
+              );
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try { resolve(JSON.parse(xhr.responseText)); }
+              catch { resolve({}); }
+            } else {
+              let detail = `Restore failed (${xhr.status})`;
+              try { detail = JSON.parse(xhr.responseText).detail || detail; } catch {}
+              reject(new Error(detail));
+            }
+          };
+
+          xhr.onerror = () => reject(new Error("Network error during restore upload"));
+          xhr.send(formData);
+        });
+
+        showBackupStatus(
+          `Restore complete — ${result.users || 0} users, ${result.projects || 0} games, ${result.clips || 0} clips, ${result.restored_files || 0} media files.`,
+          100, false, true
+        );
+
+        // Reload the app so all views reflect the restored data
+        setTimeout(() => {
+          alert("Restore complete. The app will now reload.");
+          location.reload();
+        }, 1200);
+      } catch (err) {
+        showBackupStatus(`Restore failed: ${err.message}`, null, false, false);
+      } finally {
+        label.classList.remove('opacity-60', 'pointer-events-none');
+      }
+    });
 
     function syncCanvas() {
       if (!canvas.parentElement) return;

@@ -6,6 +6,7 @@ import json
 import zipfile
 import io
 import time
+import shutil
 from pathlib import Path
 from typing import List, Optional, Union
 import bcrypt
@@ -944,6 +945,173 @@ def cleanup_temp_files(*paths: Path):
                 p.unlink()
             except Exception:
                 pass
+
+# --- Backup & Restore (Admin Only) ---
+@app.get("/api/admin/backup")
+def backup_all_data(user: dict = Depends(get_current_user)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+    backup_buffer = io.BytesIO()
+    with zipfile.ZipFile(backup_buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        # 1. Include the database (users, projects, clips metadata, rosters, reels, photos map)
+        if DB_FILE.exists():
+            zf.write(DB_FILE, arcname="store.json")
+
+        # 2. Include media directories preserving the relative layout under data/.
+        #    NOTE: "uploads" (the full-length game tapes) is intentionally excluded
+        #    because those files are very large and make the backup slow. Clips,
+        #    reels, and player photos are still included.
+        media_dirs = {
+            "clips": CLIPS_DIR,
+            "reels": REELS_DIR,
+            "players": PLAYERS_DIR,
+        }
+        for arc_prefix, folder in media_dirs.items():
+            if not folder.exists():
+                continue
+            for file_path in folder.rglob("*"):
+                if file_path.is_file():
+                    rel = file_path.relative_to(folder)
+                    zf.write(file_path, arcname=f"media/{arc_prefix}/{rel.as_posix()}")
+
+        # 3. Small manifest so restores can sanity-check the archive
+        db = read_db()
+        manifest = {
+            "app": "sports-film-room",
+            "env": APP_ENV,
+            "exported_at": int(time.time()),
+            "counts": {
+                "users": len(db.get("users", [])),
+                "projects": len(db.get("projects", [])),
+                "clips": len(db.get("clips", [])),
+                "reels": len(db.get("reels", [])),
+                "rosters": len(db.get("rosters", [])),
+                "player_photos": len(db.get("player_photos", {})),
+            }
+        }
+        zf.writestr("manifest.json", json.dumps(manifest, indent=2))
+
+    backup_buffer.seek(0)
+    total_bytes = backup_buffer.getbuffer().nbytes
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    zip_filename = f"film_room_backup_{APP_ENV_LABEL.lower()}_{stamp}.zip"
+
+    return StreamingResponse(
+        backup_buffer,
+        media_type="application/zip",
+        headers={
+            "Content-Disposition": f'attachment; filename="{zip_filename}"',
+            "Content-Length": str(total_bytes),
+            "X-Backup-Total-Bytes": str(total_bytes),
+        }
+    )
+
+@app.post("/api/admin/restore")
+async def restore_all_data(
+    backup: UploadFile = File(...),
+    overwrite: bool = Form(True),
+    user: dict = Depends(get_current_user)
+):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+
+    raw = await backup.read()
+    if len(raw) > 2 * 1024 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Backup file too large (max 2GB)")
+
+    try:
+        archive = zipfile.ZipFile(io.BytesIO(raw))
+    except zipfile.BadZipFile:
+        raise HTTPException(status_code=400, detail="Uploaded file is not a valid ZIP archive")
+
+    names = archive.namelist()
+    if "store.json" not in names:
+        raise HTTPException(status_code=400, detail="Backup is missing store.json")
+
+    # Validate the store.json before wiping anything
+    try:
+        restored_db = json.loads(archive.read("store.json").decode("utf-8"))
+    except Exception:
+        raise HTTPException(status_code=400, detail="store.json in backup is not valid JSON")
+
+    if "users" not in restored_db or "projects" not in restored_db:
+        raise HTTPException(status_code=400, detail="store.json is missing required keys")
+
+    # Ensure the active admin can still log in after restore. If the current
+    # admin's account isn't in the backup, inject it back so we don't lock out.
+    restored_users = restored_db.get("users", [])
+    if not any(u["id"] == user["sub"] for u in restored_users):
+        current_db = read_db()
+        me = next((u for u in current_db["users"] if u["id"] == user["sub"]), None)
+        if me:
+            restored_users.append(me)
+            restored_db["users"] = restored_users
+
+    # Make sure defaults exist so read_db() normalization works
+    restored_db.setdefault("reels", [])
+    restored_db.setdefault("rosters", [])
+    restored_db.setdefault("player_photos", [])
+    restored_db.setdefault("clips", [])
+
+    # Snapshot the current DB in case something fails mid-restore
+    snapshot = None
+    if DB_FILE.exists():
+        try:
+            snapshot = DB_FILE.read_bytes()
+        except Exception:
+            snapshot = None
+
+    restored_files = 0
+    try:
+        # --- Restore media files ---
+        media_dirs = {
+            "uploads": UPLOAD_DIR,
+            "clips": CLIPS_DIR,
+            "reels": REELS_DIR,
+            "players": PLAYERS_DIR,
+        }
+        for arc_prefix, folder in media_dirs.items():
+            if overwrite:
+                # Clear existing contents
+                for existing in folder.rglob("*"):
+                    if existing.is_file():
+                        try:
+                            existing.unlink()
+                        except Exception:
+                            pass
+            prefix = f"media/{arc_prefix}/"
+            for name in names:
+                if not name.startswith(prefix) or name.endswith("/"):
+                    continue
+                rel = name[len(prefix):]
+                target = folder / rel
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(name) as src, open(target, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+                restored_files += 1
+
+        # --- Restore DB last so media is already in place ---
+        write_db(restored_db)
+    except Exception as e:
+        # Roll back DB if we had a snapshot
+        if snapshot is not None:
+            try:
+                DB_FILE.write_bytes(snapshot)
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail=f"Restore failed: {e}")
+
+    return {
+        "status": "restored",
+        "overwrite": overwrite,
+        "restored_files": restored_files,
+        "users": len(restored_db.get("users", [])),
+        "projects": len(restored_db.get("projects", [])),
+        "clips": len(restored_db.get("clips", [])),
+        "reels": len(restored_db.get("reels", [])),
+        "rosters": len(restored_db.get("rosters", [])),
+    }
 
 # --- Highlight Reel Concatenation Export ---
 @app.get("/api/reels/{reel_id}/export-video")
