@@ -487,6 +487,38 @@
     html.compact [class~="mt-4"] { margin-top: 0.6rem !important; }
     html.compact [class~="mb-2"] { margin-bottom: 0.3rem !important; }
 
+    /* --- Alignment helpers ---
+       Keep icon-only buttons at a consistent hit-target height with their
+       labeled neighbors, and align quick-toggle rows so wrapped items
+       still line up on a common baseline. */
+    .icon-btn-square {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: stretch;
+      gap: 8px;
+    }
+    .action-row > * {
+      min-height: 36px;
+    }
+    .quick-toggle-row {
+      align-items: center;
+      row-gap: 6px;
+      column-gap: 6px;
+    }
+    .quick-toggle-row .quick-toggle-btn,
+    .quick-toggle-row .playtype-toggle-btn {
+      height: 30px;
+    }
+
     ::-webkit-scrollbar { width: 8px; height: 8px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #79747E; border-radius: 4px; }
@@ -1239,10 +1271,10 @@
             <span>PiP</span>
           </button>
 
-          <button type="button" id="qtSpeedBtn" class="quick-toggle-btn" title="Cycle playback speed (0.5x / 1x / 1.5x / 2x)">
+  <!--         <button type="button" id="qtSpeedBtn" class="quick-toggle-btn" title="Cycle playback speed (0.5x / 1x / 1.5x / 2x)">
             <span class="material-symbols-outlined">speed</span>
             <span id="qtSpeedLabel">1.0x</span>
-          </button>
+          </button> -->
 
           <span class="w-px h-5 bg-md-outline-variant dark:bg-md-dark-outline-variant mx-0.5 shrink-0 hidden sm:inline"></span>
 
@@ -1286,25 +1318,26 @@
             <button id="jumpBackBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !p-2 !rounded-full" title="Jump back 5s">
               <span class="material-symbols-outlined" style="font-size: 22px;">replay_5</span>
             </button>
-            <button id="stepBackBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !p-2 !rounded-full" title="Step back 1 frame">
+<!--             <button id="stepBackBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !p-2 !rounded-full" title="Step back 1 frame">
               <span class="material-symbols-outlined" style="font-size: 22px;">skip_previous</span>
-            </button>
+            </button> -->
             <button id="playPauseBtn" class="md-btn-filled bg-md-primary dark:bg-md-dark-primary text-md-on-primary dark:text-md-dark-on-primary !py-2.5 !px-6 !text-base !rounded-full min-w-[90px]">
               <span class="material-symbols-outlined" style="font-size: 22px;">play_arrow</span>
               Play
             </button>
-            <button id="stepForwardBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !p-2 !rounded-full" title="Step forward 1 frame">
+<!--             <button id="stepForwardBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !p-2 !rounded-full" title="Step forward 1 frame">
               <span class="material-symbols-outlined" style="font-size: 22px;">skip_next</span>
-            </button>
+            </button> -->
             <button id="jumpForwardBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !p-2 !rounded-full" title="Jump forward 5s">
               <span class="material-symbols-outlined" style="font-size: 22px;">forward_5</span>
             </button>
+            <button id="markEventBtn" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary role-editor !py-2.5 !px-5 !text-base shadow-md-1">
+              <span class="material-symbols-outlined filled" style="font-size: 20px;">bolt</span>
+              Mark Event (K)
+            </button>
           </div>
 
-          <button id="markEventBtn" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary role-editor !py-2.5 !px-5 !text-base shadow-md-1">
-            <span class="material-symbols-outlined filled" style="font-size: 20px;">bolt</span>
-            Mark Event (K)
-          </button>
+
 
           <div class="flex items-center gap-3 ml-auto">
             <div class="flex items-center gap-2 bg-md-surface-container-high dark:bg-md-dark-surface-container-high border border-md-outline-variant dark:border-md-dark-outline-variant px-3 py-1.5 rounded-full">
@@ -1322,12 +1355,12 @@
               <option value="1.5">1.5x</option>
               <option value="2.0">2.0x</option>
             </select>
-            <button id="telestrationToggle" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary !py-2 !px-3.5 !rounded-full" title="Toggle Drawing Mode">
+            <!-- <button id="telestrationToggle" class="md-btn-filled bg-md-tertiary dark:bg-md-dark-tertiary text-md-on-tertiary dark:text-md-dark-on-tertiary !py-2 !px-3.5 !rounded-full" title="Toggle Drawing Mode">
               <span class="material-symbols-outlined" style="font-size: 20px;">draw</span>
-            </button>
-            <button id="clearDrawingBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !py-2 !px-3.5 !rounded-full" title="Clear Drawings">
+            </button> -->
+            <!-- <button id="clearDrawingBtn" class="md-btn-text text-md-on-surface-variant dark:text-md-dark-on-surface-variant !py-2 !px-3.5 !rounded-full" title="Clear Drawings">
               <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
-            </button>
+            </button> -->
           </div>
         </div>
       </div>
