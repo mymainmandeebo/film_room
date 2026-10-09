@@ -287,6 +287,126 @@
       cursor: crosshair; 
       touch-action: none;
     }
+    .quick-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 100px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 16px;
+      cursor: pointer;
+      border: 1px solid #CAC4D0;
+      background: transparent;
+      color: #49454F;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .dark .quick-toggle-btn {
+      border-color: #49454F;
+      color: #CAC4D0;
+    }
+    .quick-toggle-btn:hover {
+      background: rgba(103, 80, 164, 0.08);
+      border-color: #6750A4;
+      color: #6750A4;
+    }
+    .dark .quick-toggle-btn:hover {
+      background: rgba(208, 188, 255, 0.12);
+      border-color: #D0BCFF;
+      color: #D0BCFF;
+    }
+    .quick-toggle-btn:active { transform: scale(0.97); }
+    .quick-toggle-btn.active {
+      background: #6750A4;
+      border-color: #6750A4;
+      color: #FFFFFF;
+    }
+    .dark .quick-toggle-btn.active {
+      background: #D0BCFF;
+      border-color: #D0BCFF;
+      color: #381E72;
+    }
+    .quick-toggle-btn .material-symbols-outlined { font-size: 16px; }
+    .quick-toggle-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* Play Type quick toggle buttons (under video) */
+    .playtype-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px;
+      border-radius: 100px;
+      font-family: 'Roboto', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 16px;
+      cursor: pointer;
+      border: 1px solid #CAC4D0;
+      background: transparent;
+      color: #49454F;
+      transition: background-color 0.15s, border-color 0.15s, color 0.15s, transform 0.1s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      white-space: nowrap;
+    }
+    .dark .playtype-toggle-btn {
+      border-color: #49454F;
+      color: #CAC4D0;
+    }
+    .playtype-toggle-btn:hover {
+      background: rgba(103, 80, 164, 0.08);
+      border-color: #6750A4;
+      color: #6750A4;
+    }
+    .dark .playtype-toggle-btn:hover {
+      background: rgba(208, 188, 255, 0.12);
+      border-color: #D0BCFF;
+      color: #D0BCFF;
+    }
+    .playtype-toggle-btn:active { transform: scale(0.97); }
+    .playtype-toggle-btn .playtype-key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 4px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 10px;
+      font-weight: 700;
+      background: rgba(0,0,0,0.08);
+      color: inherit;
+      line-height: 1;
+    }
+    .dark .playtype-toggle-btn .playtype-key {
+      background: rgba(255,255,255,0.12);
+    }
+    .playtype-toggle-btn.active {
+      background: #6750A4;
+      border-color: #6750A4;
+      color: #FFFFFF;
+    }
+    .dark .playtype-toggle-btn.active {
+      background: #D0BCFF;
+      border-color: #D0BCFF;
+      color: #381E72;
+    }
+    .playtype-toggle-btn.active .playtype-key {
+      background: rgba(255,255,255,0.25);
+    }
+    .dark .playtype-toggle-btn.active .playtype-key {
+      background: rgba(0,0,0,0.2);
+    }
+    html.compact .playtype-toggle-btn { padding: 4px 10px; font-size: 11px; gap: 4px; }
     .timeline-scrubber { 
       user-select: none; 
       touch-action: none;
@@ -1100,6 +1220,49 @@
           </div>
         </div>
 
+        <!-- Quick Toggle Toolbar (under video) -->
+        <div id="quickToggleBar" class="bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-lg px-3 py-2 flex flex-wrap items-center gap-1.5 shadow-sm">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-md-on-surface-variant dark:text-md-dark-on-surface-variant pr-1.5 shrink-0 hidden sm:inline">Quick</span>
+
+          <button type="button" id="qtDrawBtn" class="quick-toggle-btn" title="Toggle Telestration / Drawing Mode">
+            <span class="material-symbols-outlined">draw</span>
+            <span>Draw</span>
+          </button>
+
+          <button type="button" id="qtLoopBtn" class="quick-toggle-btn" title="Loop the current video or clip">
+            <span class="material-symbols-outlined">repeat</span>
+            <span>Loop</span>
+          </button>
+
+          <button type="button" id="qtPipBtn" class="quick-toggle-btn" title="Picture-in-Picture">
+            <span class="material-symbols-outlined">picture_in_picture_alt</span>
+            <span>PiP</span>
+          </button>
+
+          <button type="button" id="qtSpeedBtn" class="quick-toggle-btn" title="Cycle playback speed (0.5x / 1x / 1.5x / 2x)">
+            <span class="material-symbols-outlined">speed</span>
+            <span id="qtSpeedLabel">1.0x</span>
+          </button>
+
+          <span class="w-px h-5 bg-md-outline-variant dark:bg-md-dark-outline-variant mx-0.5 shrink-0 hidden sm:inline"></span>
+
+          <button type="button" id="qtFullscreenBtn" class="quick-toggle-btn" title="Toggle Fullscreen">
+            <span class="material-symbols-outlined">fullscreen</span>
+            <span class="hidden md:inline">Fullscreen</span>
+          </button>
+
+          <button type="button" id="qtResetBtn" class="quick-toggle-btn ml-auto" title="Reset all quick toggles (draw off, loop off, speed 1x)">
+            <span class="material-symbols-outlined">restart_alt</span>
+            <span class="hidden md:inline">Reset</span>
+          </button>
+        </div>
+
+        <!-- Play Type Quick Toggle Row (under video) — one button per play type. -->
+        <div id="playTypeQuickToggleRow" class="role-editor bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-lg px-3 py-2 flex flex-wrap items-center gap-1.5 shadow-sm">
+          <span class="text-[10px] font-mono uppercase tracking-wider text-md-tertiary dark:text-md-dark-tertiary pr-1.5 shrink-0 hidden sm:inline">Play Tags</span>
+          <div id="playTypeQuickToggles" class="flex flex-wrap items-center gap-1.5"></div>
+        </div>
+
         <div class="bg-md-surface-container-lowest dark:bg-md-dark-surface-container-lowest border border-md-outline-variant dark:border-md-dark-outline-variant rounded-md-lg px-4 py-2.5 flex flex-col gap-2 shadow-sm">
           <div class="flex justify-between items-center text-sm font-mono font-bold">
             <span id="currentTimeDisplay" class="text-md-primary dark:text-md-dark-primary text-base">00:00.00</span>
@@ -1614,6 +1777,10 @@
 
     let lookbackSeconds = parseFloat(localStorage.getItem('lookbackSeconds')) || 10;
     let leadoutSeconds = parseFloat(localStorage.getItem('leadoutSeconds')) || 3;
+
+    // Quick-toggle state
+    let qtLoopEnabled = false;
+    let qtPipActive = false;
 
     let savedVolume = parseFloat(localStorage.getItem('videoVolume') ?? 1.0);
     let isMuted = localStorage.getItem('videoMuted') === 'true';
@@ -2534,6 +2701,72 @@
       }
       localStorage.setItem(`analyzerCategories_${currentSport}`, JSON.stringify(categories));
       localStorage.setItem(`analyzerHotkeyMap_${currentSport}`, JSON.stringify(hotkeyMap));
+
+      renderPlayTypeQuickToggles();
+    }
+
+    // --- Play Type Quick Toggles (under video) ---
+    // One button per play type. Click behaves like its hotkey:
+    //   - if a pending mark is active → toggle that tag on it
+    //   - otherwise → create a new pending mark tagged with this play type
+    // Buttons highlight when their category is active on the current mark.
+    function renderPlayTypeQuickToggles() {
+      const container = document.getElementById('playTypeQuickToggles');
+      if (!container) return;
+
+      if (!categories || categories.length === 0) {
+        container.innerHTML = `<span class="text-xs text-md-on-surface-variant dark:text-md-dark-on-surface-variant italic">No play types configured. Add them in Settings.</span>`;
+        return;
+      }
+
+      // Reverse lookup: category name -> bound hotkey number (if any)
+      const catToKey = {};
+      Object.entries(hotkeyMap || {}).forEach(([num, cat]) => {
+        if (cat) catToKey[cat] = num;
+      });
+
+      container.innerHTML = categories.map(cat => {
+        const keyNum = catToKey[cat];
+        const attrEsc = cat.replace(/"/g, '&quot;');
+        const jsEsc = cat.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        const title = `Toggle play type: ${cat}${keyNum ? ` (Hotkey ${keyNum})` : ''}`;
+        return `
+          <button type="button"
+                  class="playtype-toggle-btn"
+                  data-category="${attrEsc}"
+                  onclick="quickTogglePlayType('${jsEsc}')"
+                  title="${title}">
+            ${keyNum ? `<span class="playtype-key">${keyNum}</span>` : ''}
+            <span>${cat}</span>
+          </button>
+        `;
+      }).join('');
+
+      syncPlayTypeQuickToggleState();
+    }
+
+    window.quickTogglePlayType = (cat) => {
+      if (!cat) return;
+      if (currentUser && (currentUser.role === 'viewer' || currentUser.role === 'player')) return;
+
+      if (activePendingId && pendingMarks.some(m => m.id === activePendingId)) {
+        toggleTagOnMark(activePendingId, cat);
+      } else {
+        addPendingMark(cat);
+      }
+      syncPlayTypeQuickToggleState();
+    };
+
+    function syncPlayTypeQuickToggleState() {
+      const container = document.getElementById('playTypeQuickToggles');
+      if (!container) return;
+      const mark = activePendingId ? pendingMarks.find(m => m.id === activePendingId) : null;
+      const activeCats = mark ? new Set(mark.categories || []) : new Set();
+
+      container.querySelectorAll('.playtype-toggle-btn').forEach(btn => {
+        const cat = btn.getAttribute('data-category');
+        btn.classList.toggle('active', activeCats.has(cat));
+      });
     }
 
     document.getElementById('addCategoryBtn').onclick = () => {
@@ -2773,6 +3006,170 @@
     video.volume = savedVolume;
     video.muted = isMuted;
     updateVolumeDisplay();
+
+    // ============================================================
+    // --- Quick Toggle Toolbar (under video) ---
+    // ============================================================
+    const QuickToggles = {
+      SPEEDS: [0.5, 1, 1.5, 2],
+      initDone: false,
+
+      init() {
+        if (this.initDone) return;
+        this.initDone = true;
+
+        const drawBtn = document.getElementById('qtDrawBtn');
+        const loopBtn = document.getElementById('qtLoopBtn');
+        const pipBtn = document.getElementById('qtPipBtn');
+        const speedBtn = document.getElementById('qtSpeedBtn');
+        const fsBtn = document.getElementById('qtFullscreenBtn');
+        const resetBtn = document.getElementById('qtResetBtn');
+
+        if (drawBtn) {
+          drawBtn.addEventListener('click', () => {
+            // Delegate to the existing telestration toggle so state stays in sync
+            document.getElementById('telestrationToggle').click();
+            this.syncDrawState();
+          });
+        }
+
+        if (loopBtn) {
+          loopBtn.addEventListener('click', () => {
+            qtLoopEnabled = !qtLoopEnabled;
+            loopBtn.classList.toggle('active', qtLoopEnabled);
+            loopBtn.querySelector('span:last-child').innerText = qtLoopEnabled ? 'Loop On' : 'Loop';
+          });
+        }
+
+        if (pipBtn) {
+          pipBtn.addEventListener('click', async () => {
+            try {
+              if (document.pictureInPictureElement) {
+                await document.exitPictureInPicture();
+                qtPipActive = false;
+              } else if (video.requestPictureInPicture) {
+                await video.requestPictureInPicture();
+                qtPipActive = true;
+              }
+            } catch (err) {
+              console.warn('PiP failed:', err);
+              qtPipActive = false;
+            }
+            pipBtn.classList.toggle('active', qtPipActive);
+          });
+        }
+
+        if (speedBtn) {
+          speedBtn.addEventListener('click', () => {
+            const current = parseFloat(video.playbackRate) || 1;
+            const idx = this.SPEEDS.findIndex(s => Math.abs(s - current) < 0.01);
+            const next = this.SPEEDS[(idx + 1) % this.SPEEDS.length];
+            video.playbackRate = next;
+            const rateSelect = document.getElementById('playbackRate');
+            if (rateSelect) {
+              // Prefer to keep the dropdown in sync if it has the value
+              const opt = [...rateSelect.options].find(o => parseFloat(o.value) === next);
+              if (opt) rateSelect.value = opt.value;
+            }
+            document.getElementById('qtSpeedLabel').innerText = `${next.toFixed(1)}x`;
+            speedBtn.classList.toggle('active', next !== 1);
+          });
+        }
+
+        if (fsBtn) {
+          fsBtn.addEventListener('click', async () => {
+            const container = document.getElementById('videoContainer');
+            try {
+              if (!document.fullscreenElement) {
+                if (container.requestFullscreen) {
+                  await container.requestFullscreen();
+                } else if (video.webkitEnterFullscreen) {
+                  // iOS Safari fallback
+                  video.webkitEnterFullscreen();
+                }
+              } else {
+                await document.exitFullscreen();
+              }
+            } catch (err) {
+              console.warn('Fullscreen failed:', err);
+            }
+          });
+        }
+
+        if (resetBtn) {
+          resetBtn.addEventListener('click', () => this.reset());
+        }
+
+        // Listen for fullscreen changes to update the button active state
+        document.addEventListener('fullscreenchange', () => {
+          if (fsBtn) {
+            fsBtn.classList.toggle('active', !!document.fullscreenElement);
+            const lbl = fsBtn.querySelector('span:last-child');
+            if (lbl) lbl.innerText = document.fullscreenElement ? 'Exit FS' : 'Fullscreen';
+          }
+        });
+
+        // PiP state sync if user exits via browser UI
+        video.addEventListener('leavepictureinpicture', () => {
+          qtPipActive = false;
+          if (pipBtn) pipBtn.classList.remove('active');
+        });
+
+        // Keep loop state in sync with video.loop (in case other code changes it)
+        video.addEventListener('play', () => { video.loop = qtLoopEnabled; });
+
+        this.syncDrawState();
+      },
+
+      syncDrawState() {
+        const drawBtn = document.getElementById('qtDrawBtn');
+        if (!drawBtn) return;
+        drawBtn.classList.toggle('active', isDrawingMode);
+        const lbl = drawBtn.querySelector('span:last-child');
+        if (lbl) lbl.innerText = isDrawingMode ? 'Drawing' : 'Draw';
+      },
+
+      reset() {
+        // Turn off loop
+        qtLoopEnabled = false;
+        video.loop = false;
+        const loopBtn = document.getElementById('qtLoopBtn');
+        if (loopBtn) {
+          loopBtn.classList.remove('active');
+          const lbl = loopBtn.querySelector('span:last-child');
+          if (lbl) lbl.innerText = 'Loop';
+        }
+
+        // Exit PiP if active
+        if (document.pictureInPictureElement) {
+          document.exitPictureInPicture().catch(() => {});
+        }
+        qtPipActive = false;
+        const pipBtn = document.getElementById('qtPipBtn');
+        if (pipBtn) pipBtn.classList.remove('active');
+
+        // Reset speed
+        video.playbackRate = 1;
+        const rateSelect = document.getElementById('playbackRate');
+        if (rateSelect) rateSelect.value = '1';
+        const speedBtn = document.getElementById('qtSpeedBtn');
+        if (speedBtn) {
+          speedBtn.classList.remove('active');
+          document.getElementById('qtSpeedLabel').innerText = '1.0x';
+        }
+
+        // Turn off drawing if active
+        if (isDrawingMode) {
+          document.getElementById('telestrationToggle').click();
+          this.syncDrawState();
+        }
+
+        // Exit fullscreen if active
+        if (document.fullscreenElement) {
+          document.exitFullscreen().catch(() => {});
+        }
+      }
+    };
 
     // --- Settings UI Sync ---
     function updateSettingsUI() {
@@ -3098,6 +3495,9 @@
 
         renderCategories();
         updateSettingsUI();
+
+        // Wire up the quick-toggle toolbar under the video
+        QuickToggles.init();
 
         try { await loadPlayerPhotos(); } catch (e) { console.error("loadPlayerPhotos failed:", e); }
         try { await loadRosters(); } catch (e) { console.error("loadRosters failed:", e); }
@@ -3866,6 +4266,7 @@
       activePendingId = id;
       updateTimelineUI();
       updateTimelineMarkerOverlay(mark);
+      syncPlayTypeQuickToggleState();
 
       document.querySelectorAll('#pendingMarksList > div').forEach(c => {
         c.classList.remove('border-md-tertiary', 'ring-2', 'ring-md-tertiary');
@@ -3979,6 +4380,8 @@
           </div>
         `;
       }).join('');
+
+      syncPlayTypeQuickToggleState();
     }
 
     window.updatePendingField = (id, field, value) => {
