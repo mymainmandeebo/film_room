@@ -1350,6 +1350,12 @@
                 <option value="1.5" class="bg-neutral-900 text-white">1.5x</option>
                 <option value="2.0" class="bg-neutral-900 text-white">2.0x</option>
               </select>
+
+              <div class="flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 rounded-full" title="Overlay Opacity">
+                <span class="material-symbols-outlined text-white/80" style="font-size: 18px;">opacity</span>
+                <input type="range" id="overlayOpacitySlider" min="0.15" max="1" step="0.05" value="1" class="w-16 sm:w-20 md-slider bg-white/30 accent-white">
+                <span id="overlayOpacityPct" class="font-mono text-xs text-white/80 w-8 text-right hidden sm:inline">100%</span>
+              </div>
             </div>
 
             <!-- Overlay Timeline Scrubber (mirrors the main timeline below the video) -->
@@ -1639,6 +1645,24 @@
 
     const savedCompact = localStorage.getItem('compactMode') === 'true';
     applyCompact(savedCompact);
+
+    // --- TELESTRATION / DRAWING MODE ---
+    // Toggles the drawing canvas overlay. Lives here so both the video overlay
+    // controls and the quick-toggle toolbar can drive the same state.
+    function setDrawingMode(enabled) {
+      isDrawingMode = !!enabled;
+      if (canvas) canvas.classList.toggle('drawing-mode', isDrawingMode);
+      QuickToggles.syncDrawState();
+      if (isDrawingMode && video && !video.paused) video.pause();
+    }
+
+    function toggleDrawingMode() {
+      setDrawingMode(!isDrawingMode);
+    }
+
+    function clearDrawing() {
+      if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
 
     compactToggleBtn.onclick = () => {
       const isCurrentlyCompact = document.documentElement.classList.contains('compact');
@@ -3125,6 +3149,25 @@
     volumeSlider.addEventListener('input', (e) => setVolume(parseFloat(e.target.value)));
     muteBtn.addEventListener('click', toggleMute);
 
+    // --- Overlay Controls Opacity ---
+    const overlayOpacitySlider = document.getElementById('overlayOpacitySlider');
+    const overlayOpacityPct = document.getElementById('overlayOpacityPct');
+    const videoControlsOverlay = document.getElementById('videoControlsOverlay');
+
+    function applyOverlayOpacity(val) {
+      const clamped = Math.max(0.15, Math.min(1, parseFloat(val) || 1));
+      if (videoControlsOverlay) videoControlsOverlay.style.opacity = clamped;
+      if (overlayOpacitySlider) overlayOpacitySlider.value = clamped;
+      if (overlayOpacityPct) overlayOpacityPct.innerText = `${Math.round(clamped * 100)}%`;
+      localStorage.setItem('videoControlsOpacity', clamped);
+    }
+
+    if (overlayOpacitySlider) {
+      const savedOpacity = parseFloat(localStorage.getItem('videoControlsOpacity'));
+      applyOverlayOpacity(isNaN(savedOpacity) ? 1 : savedOpacity);
+      overlayOpacitySlider.addEventListener('input', (e) => applyOverlayOpacity(e.target.value));
+    }
+
     video.volume = savedVolume;
     video.muted = isMuted;
     updateVolumeDisplay();
@@ -3149,9 +3192,7 @@
 
         if (drawBtn) {
           drawBtn.addEventListener('click', () => {
-            // Delegate to the existing telestration toggle so state stays in sync
-            document.getElementById('telestrationToggle').click();
-            this.syncDrawState();
+            toggleDrawingMode();
           });
         }
 
@@ -3282,8 +3323,7 @@
 
         // Turn off drawing if active
         if (isDrawingMode) {
-          document.getElementById('telestrationToggle').click();
-          this.syncDrawState();
+          setDrawingMode(false);
         }
 
         // Exit fullscreen if active
@@ -5343,18 +5383,8 @@
       }
     });
 
-    // Touch Telestration Canvas
-    const telestrationBtn = document.getElementById('telestrationToggle');
-    telestrationBtn.onclick = () => {
-      isDrawingMode = !isDrawingMode;
-      canvas.classList.toggle('drawing-mode', isDrawingMode);
-      telestrationBtn.classList.toggle('bg-md-tertiary', isDrawingMode);
-      telestrationBtn.classList.toggle('dark:bg-md-dark-tertiary', isDrawingMode);
-      telestrationBtn.classList.toggle('bg-md-surface-container-high', !isDrawingMode);
-      telestrationBtn.classList.toggle('dark:bg-md-dark-surface-container-high', !isDrawingMode);
-      if (isDrawingMode) video.pause();
-    };
-    document.getElementById('clearDrawingBtn').onclick = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Drawing canvas brush (mode is toggled via QuickToggles / setDrawingMode)
+    // The "clear drawing" action is exposed as clearDrawing() above.
 
     function getCanvasCoords(e) {
       const rect = canvas.getBoundingClientRect();
